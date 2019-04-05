@@ -111,3 +111,11 @@ USAGE: list_nodes [l|p]
 ```
 
 Most of the functions will take a single argument, either `l` or `p` to denote which cluster you want it to target. A handful of functions can take additional items, such as `relo_shard` & `delete_idx`. Consult their usage for more details.
+
+### REFERENCES
+* [Document APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs.html)
+* [Cluster APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster.html)
+* [cat APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/cat.html)
+* [hub, and extension to CLI git that helps with github](https://hub.github.com/)
+
+
