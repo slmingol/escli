@@ -77,7 +77,7 @@ $
 
 This is a list of the functions it provides:
 ```
-$ compgen -A function | grep -E '^(show|usage|help|list|es|explain|delete|unb|relo)'
+$ escli_ls
 delete_idx
 estop
 estop_recovery
@@ -102,7 +102,33 @@ usage_chk2
 usage_chk3
 ```
 
-Each function includes a show usage if you run it without any arguments. For example:
+You can also get that list with a short description of each function:
+```
+$ escli_lsl
+escli_ls                          # list function names
+escli_lsl                         # list function names + desc.
+list_nodes                        # list ES nodes along w/ a list of data node suffixes for use by other cmds.
+show_shards                       # list all the index shards sorted by size (big->small)
+show_big_shards                   # list top 20 shards for a given node's suffix (1a, 1b, etc.)
+show_small_shards                 # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
+relo_shard                        # move an indices' shard from node suffix X to node suffix Y
+show_recovery                     # show a summary of recovery queue
+show_recovery_full                # show full details of recovery queue
+unblock_readonly_idxs             # clear read_only_allow_delete flag
+estop                             # mimics `top` command, watching ES nodes CPU/MEM usage
+estop_recovery                    # watches the ES recovery queue
+show_health                       # cluster's health stats
+show_state                        # shows the state of the indicies' shards (RELO, Translog, etc.)
+showcfg_num_shards_per_idx        # show number of shards configured per index template
+explain_allocations               # show details (aka. explain) cluster allocation activity
+help_cat                          # print help for _cat API call
+help_indices                      # print help for _cat/indices API call
+show_idx_sizes                    # show index sizes sorted (big -> small)
+show_idx_stats                    # show index stats sorted (big -> small)
+delete_idx                        # delete an index
+```
+
+Each function includes a 'show usage' if you run it without any arguments. For example:
 ```
 $ list_nodes
 
