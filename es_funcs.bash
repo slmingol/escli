@@ -27,8 +27,8 @@ escli_ls () {
 escli_lsl () {
     # list function names + desc.
     while read line; do
-        #printf "${line}\n"
-        grep -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | paste - - | pr -t -e30
+        grep -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
+            paste - - | pr -t -e30
     done < <(awk '/^[a-z_-]+ \(\) {/ {print $1}' "${filename}")
 }
 
@@ -159,6 +159,26 @@ unblock_readonly_idxs () {
 	EOM
     )
     ${escmd[$env]} PUT '_all/_settings' -d "$ALLOWDEL"
+}
+
+show_readonly_idxs_full () {
+    # show read_only_allow_delete setting for all indices
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET \
+        '_all/_settings?pretty&filter_path=*.*.*.*.read_only_allow_delete' | \
+        paste - - - - - - - - - | \
+        column -t |  grep -v '}   }' | sort
+}
+
+show_readonly_idxs () {
+    # show read_only_allow_delete setting which are enabled (true)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\nindices with read_only_allow_delete flag set (true)"
+    printf "\n---------------------------------------------------\n"
+    show_readonly_idxs_full "$env" | grep -v false
+    printf "\n--------- end of check ----------------------------\n\n"
 }
 
 
