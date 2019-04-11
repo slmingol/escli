@@ -60,6 +60,22 @@ usage_chk3 () {
         && return 1
 }
 
+usage_chk5 () {
+    # usage msg for cmds w/ 5 arg (<shard name> <shard num> <from node suf.> <to node suf.>)
+    local env="$1"
+    local shardName="$2"
+    local shardNum="$3"
+    local fromCode="$4"
+    local toCode="$5"
+
+    [[ $env =~ [lp] && $shardName != '' \
+        && $shardNum != '' \
+        && $fromCode =~ 1[a-z] \
+        && $toCode =~ 1[a-z] ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <shard name> <shard num> <from node> <to node>\n\n" \
+        && return 1
+}
+
 #------------------------------------------------
 # node funcs
 #------------------------------------------------
@@ -103,10 +119,12 @@ show_small_shards () {
 
 relo_shard () {
     # move an indices' shard from node suffix X to node suffix Y
-    shardName=$1
-    shardNum=$2
-    fromCode=$3
-    toCode=$4
+    local env="$1"
+    local shardName="$2"
+    local shardNum="$3"
+    local fromCode="$4"
+    local toCode="$5"
+    usage_chk5 "$env" "$shardName" "$shardNum" "$fromCode" "$toCode" || return 1
     MOVE=$(cat <<-EOM
         {
             "commands" : [ {
