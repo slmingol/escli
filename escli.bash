@@ -42,7 +42,6 @@ if [ "${1}" == "HEAD" ]; then
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
         "${esBaseUrl}/$2"
 elif [ "${1}" == "PUT" ]; then
-    set -x
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
         -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4"

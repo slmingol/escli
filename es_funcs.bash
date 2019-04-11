@@ -56,7 +56,7 @@ usage_chk3 () {
     local idxArg="$2"
 
     [[ $env =~ [lp] && $idxArg != '' ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <idx pattern]>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <idx pattern>\n\n" \
         && return 1
 }
 
