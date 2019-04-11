@@ -60,6 +60,20 @@ usage_chk3 () {
         && return 1
 }
 
+usage_chk4 () {
+    # usage msg for cmds w/ 4 arg (<shard name> <shard num> <from node suf.>)
+    local env="$1"
+    local shardName="$2"
+    local shardNum="$3"
+    local fromCode="$4"
+
+    [[ $env =~ [lp] && $shardName != '' \
+        && $shardNum != '' \
+        && $fromCode =~ 1[a-z] ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <shard name> <shard num> <from node>\n\n" \
+        && return 1
+}
+
 usage_chk5 () {
     # usage msg for cmds w/ 5 arg (<shard name> <shard num> <from node suf.> <to node suf.>)
     local env="$1"
@@ -139,6 +153,30 @@ relo_shard () {
 	EOM
     )
     ${escmd[$env]} POST '_cluster/reroute' -d "$MOVE"
+}
+
+cancel_relo_shard () {
+    # cancel move of an index shard from node suffix X
+    local env="$1"
+    local shardName="$2"
+    local shardNum="$3"
+    local fromCode="$4"
+    usage_chk4 "$env" "$shardName" "$shardNum" "$fromCode" || return 1
+    CANCEL=$(cat <<-EOM
+        {
+            "commands" : [ {
+                "cancel" :
+                    {
+                      "index" : "${shardName}", "shard": ${shardNum},
+                      "node": "${esnode[$env]}${fromCode}",
+                      "allow_primary": true
+                    }
+                }
+            ]
+        }
+	EOM
+    )
+    ${escmd[$env]} POST '_cluster/reroute' -d "$CANCEL"
 }
 
 
