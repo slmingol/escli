@@ -144,7 +144,60 @@ show_recovery_full () {
 }
 
 
-unblock_readonly_idxs () {
+enable_readonly_idx_pattern () {
+    # set read_only_allow_delete flag for set of indices
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    DISALLOWDEL=$(cat <<-EOM
+        {
+         "index": {
+           "blocks": {
+             "read_only_allow_delete": "true"
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DISALLOWDEL"
+}
+
+disable_readonly_idx_pattern () {
+    # disable read_only_allow_delete flag for set of indices
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ALLOWDEL=$(cat <<-EOM
+        {
+         "index": {
+           "blocks": {
+             "read_only_allow_delete": "false"
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$ALLOWDEL"
+}
+
+enable_readonly_idxs () {
+    # set read_only_allow_delete flag
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    DISALLOWDEL=$(cat <<-EOM
+        {
+         "index": {
+           "blocks": {
+             "read_only_allow_delete": "true"
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT '_all/_settings' -d "$DISALLOWDEL"
+}
+
+disable_readonly_idxs () {
     # clear read_only_allow_delete flag
     local env="$1"
     usage_chk1 "$env" || return 1
