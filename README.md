@@ -78,28 +78,39 @@ $
 This is a list of the functions it provides:
 ```
 $ escli_ls
-delete_idx
-estop
-estop_recovery
-explain_allocations
-help_cat
-help_indices
-list_nodes
-relo_shard
-show_big_shards
-show_health
-show_idx_sizes
-show_idx_stats
-show_recovery
-show_recovery_full
-show_shards
-show_small_shards
-show_state
-showcfg_num_shards_per_idx
-unblock_readonly_idxs
+escli_ls
+escli_lsl
+grep
 usage_chk1
 usage_chk2
 usage_chk3
+usage_chk4
+usage_chk5
+list_nodes
+show_shards
+show_big_shards
+show_small_shards
+relo_shard
+cancel_relo_shard
+show_recovery
+show_recovery_full
+enable_readonly_idx_pattern
+disable_readonly_idx_pattern
+enable_readonly_idxs
+disable_readonly_idxs
+show_readonly_idxs_full
+show_readonly_idxs
+estop
+estop_recovery
+show_health
+show_state
+showcfg_num_shards_per_idx
+explain_allocations
+help_cat
+help_indices
+show_idx_sizes
+show_idx_stats
+delete_idx
 ```
 
 You can also get that list with a short description of each function:
@@ -112,9 +123,15 @@ show_shards                       # list all the index shards sorted by size (bi
 show_big_shards                   # list top 20 shards for a given node's suffix (1a, 1b, etc.)
 show_small_shards                 # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
 relo_shard                        # move an indices' shard from node suffix X to node suffix Y
+cancel_relo_shard                 # cancel move of an index shard from node suffix X
 show_recovery                     # show a summary of recovery queue
 show_recovery_full                # show full details of recovery queue
-unblock_readonly_idxs             # clear read_only_allow_delete flag
+enable_readonly_idx_pattern       # set read_only_allow_delete flag for set of indices
+disable_readonly_idx_pattern      # disable read_only_allow_delete flag for set of indices
+enable_readonly_idxs              # set read_only_allow_delete flag
+disable_readonly_idxs             # clear read_only_allow_delete flag
+show_readonly_idxs_full           # show read_only_allow_delete setting for all indices
+show_readonly_idxs                # show read_only_allow_delete setting which are enabled (true)
 estop                             # mimics `top` command, watching ES nodes CPU/MEM usage
 estop_recovery                    # watches the ES recovery queue
 show_health                       # cluster's health stats
