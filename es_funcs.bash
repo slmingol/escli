@@ -152,7 +152,8 @@ relo_shard () {
         }
 	EOM
     )
-    ${escmd[$env]} POST '_cluster/reroute' -d "$MOVE"
+    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute' -d "$MOVE")
+    echo "${cmdOutput}" | grep -q '"acknowledged":true' && printf '{"acknowledged":true}\n' || echo "${cmdOutput}"
 }
 
 cancel_relo_shard () {
@@ -176,7 +177,8 @@ cancel_relo_shard () {
         }
 	EOM
     )
-    ${escmd[$env]} POST '_cluster/reroute' -d "$CANCEL"
+    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute' -d "$CANCEL")
+    echo "${cmdOutput}" | grep -q '"acknowledged":true' && printf '{"acknowledged":true}\n' || echo "${cmdOutput}"
 }
 
 
