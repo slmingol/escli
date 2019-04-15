@@ -104,7 +104,7 @@ list_nodes () {
     # list ES nodes along w/ a list of data node suffixes for use by other cmds.
     local env="$1"
     usage_chk1 "$env" || return 1
-    output=$(${escmd[$env]} GET '_cat/nodes')
+    output=$(${escmd[$env]} GET '_cat/nodes?v&pretty')
     dnodes=$(echo "${output}" | awk '/data/ { print $10 }' | sed 's/.*-0//' | sort | paste -s -d"," -)
 
     printf "\n%s\n\n"                         "${output}"
