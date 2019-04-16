@@ -52,5 +52,5 @@ elif [ "${1}" == "POST" ]; then
 else
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        -X$1 "${esBaseUrl}/$2" "$3" "$4" "$5"
+        -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4" "$5"
 fi
