@@ -318,6 +318,13 @@ estop_recovery () {
     watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' | grep -v done | head"
 }
 
+estop_relo () {
+    # watches ES relocations
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node' | grep -v STARTED | head"
+}
+
 show_health () {
     # cluster's health stats
     local env="$1"
