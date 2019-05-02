@@ -332,6 +332,13 @@ show_health () {
     ${escmd[$env]} GET '_cluster/health?pretty'
 }
 
+show_clustercfg () {
+    # show all '_cluster/settings' configs
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'
+}
+
 show_state () {
     # shows the state of the indicies' shards (RELO, Translog, etc.)
     local env="$1"
