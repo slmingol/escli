@@ -198,7 +198,7 @@ show_recovery () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' \
-        | grep -v done | head
+        | grep -v done | head -15
 }
 
 show_recovery_full () {
@@ -206,7 +206,7 @@ show_recovery_full () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/recovery?v' \
-        | grep -v done | head
+        | grep -v done | head -15
 }
 
 
@@ -315,14 +315,14 @@ estop_recovery () {
     # watches the ES recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' | grep -v done | head"
+    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' | grep -v done | head -15"
 }
 
 estop_relo () {
     # watches ES relocations
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node' | grep -v STARTED | head"
+    watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node&s=index:desc' | grep -v STARTED | head -15"
 }
 
 show_health () {
@@ -337,6 +337,13 @@ show_clustercfg () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'
+}
+
+show_watermarks () {
+    # show watermarks when storage marks readonly
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'# | grep watermarks
 }
 
 show_state () {
