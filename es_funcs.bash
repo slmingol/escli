@@ -23,9 +23,9 @@ filename="es_funcs.bash"
 #################################################
 
 
-#------------------------------------------------
+#1-----------------------------------------------
 # usage funcs
-#------------------------------------------------
+##-----------------------------------------------
 escli_ls () {
     # list function names
     awk '/\(\)/ {print $1}' ${filename}
@@ -34,9 +34,15 @@ escli_ls () {
 escli_lsl () {
     # list function names + desc.
     while read line; do
-        grep -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
-            paste - - | pr -t -e30
-    done < <(awk '/^[a-z_-]+ \(\) {/ {print $1}' "${filename}")
+        if [[ $line =~ ^#[0-9]+-- ]]; then
+            printf "\n"
+            grep --color=never -A2 "^${line}" "${filename}"
+        else
+            grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
+                paste - - | pr -t -e30
+        fi
+    done < <(awk '/^[a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}")
+    printf "\n\n"
 }
 
 usage_chk1 () {
@@ -97,9 +103,9 @@ usage_chk5 () {
         && return 1
 }
 
-#------------------------------------------------
+#2-----------------------------------------------
 # node funcs
-#------------------------------------------------
+##-----------------------------------------------
 list_nodes () {
     # list ES nodes along w/ a list of data node suffixes for use by other cmds.
     local env="$1"
@@ -113,9 +119,9 @@ list_nodes () {
 }
 
 
-#------------------------------------------------
+#3-----------------------------------------------
 # shard funcs
-#------------------------------------------------
+##-----------------------------------------------
 show_shards () {
     # list all the index shards sorted by size (big->small)
     local env="$1"
@@ -128,7 +134,7 @@ show_big_shards () {
     local env="$1"
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
-    show_shards "$env" | grep -E "index|${node}" | head -20
+    show_shards "$env" | grep -E "index|${node}" | head -40
 }
 
 show_small_shards () {
@@ -136,7 +142,7 @@ show_small_shards () {
     local env="$1"
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
-    show_shards "$env" | grep -E "index|${node}" | tail -20
+    show_shards "$env" | grep -E "index|${node}" | tail -40
 }
 
 relo_shard () {
@@ -190,15 +196,15 @@ cancel_relo_shard () {
 }
 
 
-#------------------------------------------------
+#4-----------------------------------------------
 # recovery funcs
-#------------------------------------------------
+##-----------------------------------------------
 show_recovery () {
     # show a summary of recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' \
-        | grep -v done | head -15
+        | grep -v done | head -40
 }
 
 show_recovery_full () {
@@ -206,7 +212,7 @@ show_recovery_full () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/recovery?v' \
-        | grep -v done | head -15
+        | grep -v done | head -40
 }
 
 
@@ -301,9 +307,9 @@ show_readonly_idxs () {
 }
 
 
-#------------------------------------------------
+#5-----------------------------------------------
 # stat funcs
-#------------------------------------------------
+##-----------------------------------------------
 estop () {
     # mimics `top` command, watching ES nodes CPU/MEM usage
     local env="$1"
@@ -315,14 +321,14 @@ estop_recovery () {
     # watches the ES recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' | grep -v done | head -15"
+    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent&s=target_node,source_node,index' | grep -v done | head -40"
 }
 
 estop_relo () {
     # watches ES relocations
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node&s=index:desc' | grep -v STARTED | head -15"
+    watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node&s=index:desc' | grep -v STARTED | head -40"
 }
 
 show_health () {
@@ -332,18 +338,11 @@ show_health () {
     ${escmd[$env]} GET '_cluster/health?pretty'
 }
 
-show_clustercfg () {
-    # show all '_cluster/settings' configs
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'
-}
-
 show_watermarks () {
     # show watermarks when storage marks readonly
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'# | grep watermarks
+    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true' | grep watermark
 }
 
 show_state () {
@@ -351,6 +350,13 @@ show_state () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/shards?bytes=gb&v&human' | grep -v STARTED
+}
+
+showcfg_cluster () {
+    # show all '_cluster/settings' configs
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'
 }
 
 showcfg_num_shards_per_idx () {
@@ -362,6 +368,29 @@ showcfg_num_shards_per_idx () {
         column -t | grep -v '}   }' | sort
 }
 
+showcfg_shard_allocations () {
+    # show cluster level shard allocation configs
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\nREFS\n----\n - %s\n - %s\n" \
+        "https://www.elastic.co/guide/en/elasticsearch/reference/current/shards-allocation.html#_shard_allocation_settings" \
+        "https://www.elastic.co/guide/en/elasticsearch/reference/current/disk-allocator.html"
+
+    printf "\nShard Allocation Settings\n-------------------------\n"
+    showcfg_cluster "$env" | grep -E "cluster.routing.allocation.(enable|node_concurrent|node_initial_primaries|same_shard.host)"
+
+    printf "\nShard Rebalancing Settings\n--------------------------\n"
+    showcfg_cluster "$env" | grep -E "cluster.routing.*(rebalance|allow_rebalance|cluster_concurrent_rebalance)"
+
+    printf "\nShard Balancing Settings\n------------------------\n"
+    showcfg_cluster "$env" | grep -E "cluster.routing.allocation.balance"
+
+    printf "\nDisk-based Shard Settings\n-------------------------\n"
+    showcfg_cluster "$env" | grep -E "disk.watermark|cluster.info.update.interval|allocation.disk.include_relocations"
+
+    printf "\n"
+}
+
 explain_allocations () {
     # show details (aka. explain) cluster allocation activity
     local env="$1"
@@ -370,9 +399,9 @@ explain_allocations () {
 }
 
 
-#------------------------------------------------
+#6-----------------------------------------------
 # help funcs
-#------------------------------------------------
+##-----------------------------------------------
 help_cat () {
     # print help for _cat API call
     local env="$1"
@@ -388,9 +417,9 @@ help_indices () {
 }
 
 
-#------------------------------------------------
+#7-----------------------------------------------
 # index funcs
-#------------------------------------------------
+##-----------------------------------------------
 show_idx_sizes () {
     # show index sizes sorted (big -> small)
     local env="$1"
@@ -412,3 +441,53 @@ delete_idx () {
     usage_chk3 "$env" "$idxArg" || return 1
     ${escmd[$env]} DELETE "$idxArg"
 }
+
+#8-----------------------------------------------
+# node funcs
+##-----------------------------------------------
+exclude_node_name () {
+    # exclude a node from cluster (node suffix)
+    local env="$1"
+    local node="$2"
+    usage_chk2 "$env" "$node" || return 1
+
+    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,name')
+    ip=$(echo "${output}"   | awk -v n="$node" '$0 ~ n {print $1}')
+    name=$(echo "${output}" | awk -v n="$node" '$0 ~ n {print $2}')
+
+    EXCLUDENAME=$(cat <<-EOM
+        {
+         "transient": {
+           "cluster.routing.allocation.exclude._ip":   "$ip",
+           "cluster.routing.allocation.exclude._name": "$name"
+         }
+        }
+	EOM
+    )
+    ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
+}
+
+show_excluded_nodes () {
+    # show excluded nodes from cluster
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    showcfg_cluster "$env" | grep allocation.exclude
+}
+
+clear_excluded_nodes () {
+    # clear any excluded cluster nodes
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+
+    EXCLUDENAME=$(cat <<-EOM
+        {
+         "transient": {
+           "cluster.routing.allocation.exclude._ip":   null,
+           "cluster.routing.allocation.exclude._name": null
+         }
+        }
+	EOM
+    )
+    ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
+}
+
