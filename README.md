@@ -94,6 +94,7 @@ show_big_shards
 show_small_shards
 relo_shard
 cancel_relo_shard
+cancel_relo_shard_all
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
@@ -126,6 +127,7 @@ You can also get that list with a short description of each function:
 ```
 $ escli_lsl
 
+
 #1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
@@ -145,6 +147,7 @@ show_big_shards                   # list top 20 shards for a given node's suffix
 show_small_shards                 # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
 relo_shard                        # move an indices' shard from node suffix X to node suffix Y
 cancel_relo_shard                 # cancel move of an index shard from node suffix X
+cancel_relo_shard_all             # cancel all shard RELOCATIONS in recovery queue
 
 #4-----------------------------------------------
 # recovery funcs

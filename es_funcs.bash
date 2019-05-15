@@ -195,6 +195,18 @@ cancel_relo_shard () {
     echo "${cmdOutput}" | grep -q '"acknowledged":true' && printf '{"acknowledged":true}\n' || echo "${cmdOutput}"
 }
 
+cancel_relo_shards_all () {
+    # cancel all shard RELOCATIONS in recovery queue
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    while read line; do
+        local shardName="$(echo $line | awk '{print $1}')"
+        local shardNum="$(echo $line  | awk '{print $2}')"
+        local fromCode="$(echo $line  | rev | cut -d'-' -f1 | rev | sed 's/0//')"
+        cancel_relo_shard "$env" "$shardName" "$shardNum" "$fromCode" 
+    done < <(show_shards p | grep RELO | awk '{print $1,$2,$8}')
+    
+}
 
 #4-----------------------------------------------
 # recovery funcs
