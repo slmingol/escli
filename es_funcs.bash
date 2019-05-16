@@ -191,7 +191,7 @@ cancel_relo_shard () {
         }
 	EOM
     )
-    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute' -d "$CANCEL")
+    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute?explain' -d "$CANCEL")
     echo "${cmdOutput}" | grep -q '"acknowledged":true' && printf '{"acknowledged":true}\n' || echo "${cmdOutput}"
 }
 
@@ -207,6 +207,48 @@ cancel_relo_shards_all () {
     done < <(show_shards p | grep RELO | awk '{print $1,$2,$8}')
     
 }
+
+increase_balance_throttle () {
+    # increase routing allocations for balancing & recoveries (throttle open)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    THROTTLEINC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : "50",
+                "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "10",
+                "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "10",
+                "cluster.routing.allocation.node_concurrent_recoveries" : "40",
+                "cluster.routing.allocation.node_initial_primaries_recoveries" : "100",
+                "indices.recovery.max_bytes_per_sec" : "5000mb"
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
+    showcfg_cluster "$env" | jq .persistent
+}
+
+reset_balance_throttle () {
+    # reset routing allocations for balancing & recoveries (throttle default)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    THROTTLEINC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : null,
+                "cluster.routing.allocation.node_concurrent_*" : null,
+                "cluster.routing.allocation.node_initial_primaries_recoveries" : null,
+                "indices.recovery.max_bytes_per_sec" : null
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings?include_defaults=true' -d "$THROTTLEINC")
+    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)"
+    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
+}
+
 
 #4-----------------------------------------------
 # recovery funcs

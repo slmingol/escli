@@ -87,6 +87,21 @@ messaging-6.5.1-2019.03.18        1     r      STARTED  155686867   79.2gb 192.1
 messaging-6.5.1-2019.03.18        2     p      STARTED  155700930   79.2gb 192.168.7.85   rdu-es-data-01e
 ```
 
+### segment details
+```
+$ ./esp GET '_cat/segments/syslog-2019.04.15?v' | head
+index             shard prirep ip             segment generation docs.count docs.deleted    size size.memory committed searchable version compound
+syslog-2019.04.15 0     p      192.168.33.196 _9th         12725    3940113            0   2.5gb     6722687 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _rrd         35977    7732117            0   4.9gb    12087594 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _13r9        51525    4395268            0   2.8gb     7449952 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _1izz        71279    7778245            0   4.9gb    12681149 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _20wr        94491    7661831            0   4.9gb    12842165 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _2e5o       111660    4364117            0   2.8gb     7381767 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _2nwg       124288    3909078            0   2.5gb     6703089 true      true       7.5.0   true
+syslog-2019.04.15 0     p      192.168.33.196 _2x7v       136363    4735325            0     3gb     8495301 true      true       7.5.0   false
+syslog-2019.04.15 0     p      192.168.33.196 _37w9       150201    4800215            0     3gb     9006918 true      true       7.5.0   true
+```
+
 ### delete index
 ```
 $ ./esl DELETE 'packetbeat-6.5.1-2019.03.01'
@@ -170,6 +185,24 @@ $ ./esl GET '_cluster/allocation/explain?pretty'
 }
 ```
 
+### Check on shard allocation
+```
+$ ./esp GET '_cluster/allocation/explain?pretty' '{"index": "syslog-2019.04.15", "shard": 0, "primary": true}'
+{
+  "error" : {
+    "root_cause" : [
+      {
+        "type" : "remote_transport_exception",
+        "reason" : "[rdu-es-master-01c][192.168.33.212:9300][cluster:monitor/allocation/explain]"
+      }
+    ],
+    "type" : "illegal_argument_exception",
+    "reason" : "unable to find any unassigned shards to explain [ClusterAllocationExplainRequest[useAnyUnassignedShard=true,includeYesDecisions?=false]"
+  },
+  "status" : 400
+}
+```
+
 ### Index health and HDD usage (sorted by HDD use)
 ```
 $ ./esl GET '_cat/indices?pretty&v&s=pri.store.size:desc' | head
@@ -200,6 +233,26 @@ creation.date                    | cd                             | index creati
 creation.date.string             | cds                            | index creation date (as string)
 ```
 
+### explain
+```
+$ ./esp POST '_cluster/reroute?explain' -d ' {"commands": [{"allocate_replica": {"index": "messaging-6.5.1-2019.05.15", "shard": 1, "node": "rdu-es-data-01e"}}]}' | jq .explanations [
+  {
+    "command": "allocate_replica",
+    "parameters": {
+      "index": "messaging-6.5.1-2019.05.15",
+      "shard": 1,
+      "node": "rdu-es-data-01e"
+    },
+    "decisions": [
+      {
+        "decider": "allocate_replica (allocation command)",
+        "decision": "NO",
+        "explanation": "all copies of [messaging-6.5.1-2019.05.15][1] are already assigned. Use the move allocation command instead"
+      }
+    ]
+  }
+]
+```
 
 ### Analyzing volume of logs from container
 ```
