@@ -245,7 +245,7 @@ reset_balance_throttle () {
 	EOM
     )
     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings?include_defaults=true' -d "$THROTTLEINC")
-    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)"
+    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
 }
 
