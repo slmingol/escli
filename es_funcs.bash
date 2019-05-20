@@ -220,7 +220,7 @@ increase_balance_throttle () {
                 "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "10",
                 "cluster.routing.allocation.node_concurrent_recoveries" : "40",
                 "cluster.routing.allocation.node_initial_primaries_recoveries" : "100",
-                "indices.recovery.max_bytes_per_sec" : "5000mb"
+                "indices.recovery.max_bytes_per_sec" : "100mb"
             }
         }
 	EOM
