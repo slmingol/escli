@@ -245,10 +245,16 @@ reset_balance_throttle () {
 	EOM
     )
     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings?include_defaults=true' -d "$THROTTLEINC")
-    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
+    show_balance_throttle "$env"
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
 }
 
+show_balance_throttle () {
+    # show routing allocations for balancing & recoveries (current)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
+}
 
 #4-----------------------------------------------
 # recovery funcs
@@ -431,7 +437,7 @@ showcfg_shard_allocations () {
         "https://www.elastic.co/guide/en/elasticsearch/reference/current/disk-allocator.html"
 
     printf "\nShard Allocation Settings\n-------------------------\n"
-    showcfg_cluster "$env" | grep -E "cluster.routing.allocation.(enable|node_concurrent|node_initial_primaries|same_shard.host)"
+    showcfg_cluster "$env" | grep -E "cluster.routing.allocation.(enable|node_concurrent|node_initial_primaries|same_shard.host)|recovery.max_bytes_per_sec"
 
     printf "\nShard Rebalancing Settings\n--------------------------\n"
     showcfg_cluster "$env" | grep -E "cluster.routing.*(rebalance|allow_rebalance|cluster_concurrent_rebalance)"
