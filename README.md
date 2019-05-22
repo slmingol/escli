@@ -89,12 +89,16 @@ usage_chk3
 usage_chk4
 usage_chk5
 list_nodes
+list_nodes_storage
 show_shards
 show_big_shards
 show_small_shards
 relo_shard
 cancel_relo_shard
-cancel_relo_shard_all
+cancel_relo_shards_all
+increase_balance_throttle
+reset_balance_throttle
+show_balance_throttle
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
@@ -127,7 +131,6 @@ You can also get that list with a short description of each function:
 ```
 $ escli_lsl
 
-
 #1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
@@ -138,6 +141,7 @@ escli_lsl                         # list function names + desc.
 # node funcs
 ##-----------------------------------------------
 list_nodes                        # list ES nodes along w/ a list of data node suffixes for use by other cmds.
+list_nodes_storage                # list ES nodes HDD usage
 
 #3-----------------------------------------------
 # shard funcs
@@ -147,7 +151,10 @@ show_big_shards                   # list top 20 shards for a given node's suffix
 show_small_shards                 # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
 relo_shard                        # move an indices' shard from node suffix X to node suffix Y
 cancel_relo_shard                 # cancel move of an index shard from node suffix X
-cancel_relo_shard_all             # cancel all shard RELOCATIONS in recovery queue
+cancel_relo_shards_all            # cancel all shard RELOCATIONS in recovery queue
+increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
+reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
+show_balance_throttle             # show routing allocations for balancing & recoveries (current)
 
 #4-----------------------------------------------
 # recovery funcs

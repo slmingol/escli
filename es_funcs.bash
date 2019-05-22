@@ -111,12 +111,24 @@ list_nodes () {
     local env="$1"
     usage_chk1 "$env" || return 1
     #output=$(${escmd[$env]} GET '_cat/nodes?v&pretty')
-    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,heap.percent,ram.percent,cpu,load_1m,load_5m,load_15m,node.role,master,name,disk.total,disk.used,disk.avail,disk.used_percent')
+    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,heap.percent,ram.percent,cpu,load_1m,load_5m,load_15m,node.role,master,name,disk.total,disk.used,disk.avail,disk.used_percent&s=name:asc')
     dnodes=$(echo "${output}" | awk '/data/ { print $10 }' | sed 's/.*-0//' | sort | paste -s -d"," -)
 
     printf "\n%s\n\n"                         "${output}"
     printf "valid data node suffixes: %s\n\n" "${dnodes}"
 }
+
+list_nodes_storage () {
+    # list ES nodes HDD usage
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,node.role,master,name,disk.total,disk.used,disk.avail,disk.used_percent&s=disk.used_percent:desc')
+    dnodes=$(echo "${output}" | awk '/data/ { print $4 }' | sed 's/.*-0//' | sort | paste -s -d"," -)
+
+    printf "\n%s\n\n"                         "${output}"
+    printf "valid data node suffixes: %s\n\n" "${dnodes}"
+}
+
 
 
 #3-----------------------------------------------
