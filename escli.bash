@@ -49,8 +49,14 @@ elif [ "${1}" == "POST" ]; then
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
         -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4"
+#elif [ "${1}" == "KIBANA" ]; then
+#    curl -skK \
+#        <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
+#        -XPOST -H "${contType}" -H "kbn-xsrf: reporting" "$2"
 else
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
         -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4" "$5"
 fi
+
+
