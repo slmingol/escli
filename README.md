@@ -18,15 +18,19 @@ Finally there's a file `cmds.md` which includes examples with output showcasing 
 ```
 $ tree -I '*ARCHIVE*|*WIP*' -L 3
 .
+├── LICENSE
 ├── README.md
 ├── cmds.md
 ├── es_funcs.bash
+├── esc -> escli.bash
 ├── escli.bash
 ├── escli.conf
+├── escli.conf.sample
+├── escli_c.conf.sample
 ├── esl -> escli.bash
 └── esp -> escli.bash
 
-0 directories, 7 files
+0 directories, 11 files
 ```
 
 ### USAGE
@@ -69,6 +73,24 @@ $ ./esp
 
 ```
 
+Additionally if you maintain a cluster that's hosted via Elastic's found.io domain you can use the `./esc` symbolic link.
+```
+./esc
+
+    USAGE: ./esc [HEAD|GET|PUT|POST] '...ES REST CALL...'
+
+    EXAMPLES:
+
+        ./esc GET  '_cat/shards?pretty'
+        ./esc GET  '_cat/indices?pretty&v&human'
+        ./esc GET  '_cat'
+        ./esc GET  ''
+        ./esc PUT  '_all/_settings'   -d "$DATA"
+        ./esc POST '_cluster/reroute' -d "$DATA"
+
+
+```
+
 #### es_funcs.bash
 If you'd like to make use of the helper functions within the file `es_funcs.bash` you simply source this file into your existing shell.
 
@@ -96,6 +118,7 @@ show_small_shards
 relo_shard
 cancel_relo_shard
 cancel_relo_shards_all
+retry_unassigned_shards
 increase_balance_throttle
 reset_balance_throttle
 show_balance_throttle
@@ -152,6 +175,7 @@ show_small_shards                 # list smallest 20 shards for a given node's s
 relo_shard                        # move an indices' shard from node suffix X to node suffix Y
 cancel_relo_shard                 # cancel move of an index shard from node suffix X
 cancel_relo_shards_all            # cancel all shard RELOCATIONS in recovery queue
+retry_unassigned_shards           # reallocate all unassignable shards (elapsed past 5 retries)
 increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
 reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
 show_balance_throttle             # show routing allocations for balancing & recoveries (current)
@@ -209,11 +233,11 @@ Each function includes a 'show usage' if you run it without any arguments. For e
 ```
 $ list_nodes
 
-USAGE: list_nodes [l|p]
+USAGE: list_nodes [l|p|c]
 
 ```
 
-Most of the functions will take a single argument, either `l` or `p` to denote which cluster you want it to target. A handful of functions can take additional items, such as `relo_shard` & `delete_idx`. Consult their usage for more details.
+Most of the functions will take a single argument, either `l` or `p` or `c` to denote which cluster you want it to target. A handful of functions can take additional items, such as `relo_shard` & `delete_idx`. Consult their usage for more details.
 
 ### REFERENCES
 * [Document APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs.html)
