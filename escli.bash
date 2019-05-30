@@ -3,14 +3,21 @@
 #------------------------------------------------
 # Detect how we were called [l|p]
 #------------------------------------------------
-[[ $(basename $0) == "esl" ]] && env="lab1" || env="rdu1"
+calledCmd="$(basename $0)"
+[[ $calledCmd == "esl" ]] && env="lab1"
+[[ $calledCmd == "esp" ]] && env="rdu1"
+[[ $calledCmd == "esc" ]] && env="aws1"
 
 #------------------------------------------------
 # source escli.conf variables
 #------------------------------------------------
 # g* tools via brew install coreutils
 [ $(uname) == "Darwin" ] && readlink=greadlink || readlink=readlink
+
+# source default escli.conf
 . $(dirname $($readlink -f $0))/escli.conf
+# source secondary escli_c.conf if called w/ esc
+[ "$env" == "aws1" ] && . $(dirname $($readlink -f $0))/escli_c.conf
 
 
 usage () {

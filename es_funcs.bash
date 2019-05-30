@@ -2,12 +2,14 @@
 declare -A escmd
 escmd[l]="./esl"
 escmd[p]="./esp"
+escmd[c]="./esc"
 
 ### es data node naming conventions
 nodeBaseName="rdu-es-data-0"
 declare -A esnode
 esnode[l]="lab-${nodeBaseName}"
 esnode[p]="${nodeBaseName}"
+esnode[c]="instance-0000000"
 
 filename="es_funcs.bash"
 
@@ -49,8 +51,8 @@ usage_chk1 () {
     # usage msg for cmds w/ 1 arg
     local env="$1"
 
-    [[ $env =~ [lp] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p]\n\n" && return 1
+    [[ $env =~ [lpc] ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c]\n\n" && return 1
 }
 
 usage_chk2 () {
@@ -58,8 +60,8 @@ usage_chk2 () {
     local env="$1"
     local node="$2"
 
-    [[ $env =~ [lp] && $node =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <node suffix--[1a|1b|1c|1d...]>\n\n" \
+    [[ $env =~ [lpc] && $node =~ 1[a-z] ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <node suffix--[1a|1b|1c|1d...]>\n\n" \
         && return 1
 }
 
@@ -68,22 +70,22 @@ usage_chk3 () {
     local env="$1"
     local idxArg="$2"
 
-    [[ $env =~ [lp] && $idxArg != '' ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <idx pattern>\n\n" \
+    [[ $env =~ [lpc] && $idxArg != '' ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern>\n\n" \
         && return 1
 }
 
 usage_chk4 () {
-    # usage msg for cmds w/ 4 arg (<shard name> <shard num> <from node suf.>)
+    # usage msg for cmds w/ 4 arg (<shard name> <shard num> <from/to node suf.>)
     local env="$1"
     local shardName="$2"
     local shardNum="$3"
-    local fromCode="$4"
+    local nodeCode="$4"
 
-    [[ $env =~ [lp] && $shardName != '' \
+    [[ $env =~ [lpc] && $shardName != '' \
         && $shardNum != '' \
-        && $fromCode =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <shard name> <shard num> <from node>\n\n" \
+        && $nodeCode =~ 1[a-z] || $nodeCode =~ [0-9]{3} ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from/to node>\n\n" \
         && return 1
 }
 
@@ -95,11 +97,11 @@ usage_chk5 () {
     local fromCode="$4"
     local toCode="$5"
 
-    [[ $env =~ [lp] && $shardName != '' \
+    [[ $env =~ [lpc] && $shardName != '' \
         && $shardNum != '' \
         && $fromCode =~ 1[a-z] \
         && $toCode =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p] <shard name> <shard num> <from node> <to node>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from node> <to node>\n\n" \
         && return 1
 }
 
@@ -218,6 +220,14 @@ cancel_relo_shards_all () {
         cancel_relo_shard "$env" "$shardName" "$shardNum" "$fromCode" 
     done < <(show_shards p | grep RELO | awk '{print $1,$2,$8}')
     
+}
+
+retry_unassigned_shards () {
+    # reallocate all unassignable shards (elapsed past 5 retries)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute?retry_failed&explain&pretty')
+    echo "${cmdOutput}" | less
 }
 
 increase_balance_throttle () {
