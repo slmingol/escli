@@ -4,7 +4,10 @@ This repo includes a CLI tool to simplify interacting with the Elasticsearch RES
 - On OSX you have `greadlink` installed via `brew`
 - ***(Preferred)*** Your credentials are stored in LastPass
 - ***(Preferred)*** You have the LastPass CLI tool installed, `lpass` via `brew`
-- ***(Alternative)*** Use some other method to provide credentials (see ``escli.conf`` for other methods)
+- ***(Alternative)*** Use some other method to provide credentials (see ``escli.conf.sample`` for other methods)
+
+- Make a copy of `escli.conf.sample` to `escli.conf` and customize (follow guidances within file)
+- Optionally make a copy of `escli_c.conf.sample` to `escli_c.conf` and customize
 
 ### STRUCTURE
 There is 1 CLI tool `escli.bash` which is then linked as `esl` and `esp` to point to a 'lab' and 'production' instances of Elasticsearch clusters. 
