@@ -573,3 +573,13 @@ clear_excluded_nodes () {
     ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
 }
 
+#9-----------------------------------------------
+# auth funcs
+##-----------------------------------------------
+eswhoami () {
+    # show info about who am i
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET '_xpack/security/_authenticate?pretty'
+}
+
