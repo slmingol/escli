@@ -604,3 +604,70 @@ evict_auth_cred_cache () {
     ${escmd["$env"]} POST '_xpack/security/realm/ldap1/_clear_cache?pretty'
     # https://www.elastic.co/guide/en/elasticsearch/reference/6.5/security-api-clear-cache.html
 }
+
+# $ ./esl GET '_xpack/security/_authenticate?pretty'
+# {
+#   "username" : "someuser",
+#   "roles" : [
+#     "index_mbashley_testing",
+#     "cluster_user",
+#     "index_mbashley_read",
+#     "kibana_user",
+#     "superuser"
+#   ],
+#   "full_name" : null,
+#   "email" : null,
+#   "metadata" : {
+#     "ldap_dn" : "uid=someuser, cn=users, cn=accounts, dc=somedom,dc=com",
+#     "ldap_groups" : [
+#       "cn=ipausers,cn=groups,cn=accounts,dc=somedom,dc=com",
+#       "cn=sysadmin,cn=groups,cn=accounts,dc=somedom,dc=com",
+#       "cn=eng-systems,cn=groups,cn=accounts,dc=somedom,dc=com"
+#     ]
+#   },
+#   "enabled" : true
+# }
+
+# $ ./esl GET '_xpack/security/role?pretty' | jq .[] | head
+# {
+#   "cluster": [],
+#   "indices": [
+#     {
+#       "names": [
+#         ".kibana*"
+#       ],
+#       "privileges": [
+#         "read",
+#         "view_index_metadata"
+
+# $ ./esl GET '_xpack/security/role?pretty' | jq 'to_entries[] | .key' | sed 's/"//g' | sort | head
+# anon_monitor
+# apm_system
+# beats_admin
+# beats_system
+# cluster_user
+# index_someuser_read
+# index_someuser_testing
+# ingest_admin
+# kibana_dashboard_only_user
+
+# $ ./esl GET '_xpack/security/user' | jq 'to_entries[] | .key'
+# "elastic"
+# "kibana"
+# "logstash_system"
+# "beats_system"
+# "apm_system"
+# "remote_monitoring_user"
+# "anonymous_user"
+# "logstash_internal"
+
+# https://www.elastic.co/guide/en/x-pack/current/mapping-roles.html#mapping-roles-api
+#
+# By default, X-Pack security checks role mapping files for changes every 5 seconds. 
+# You can change this default behavior by changing the resource.reload.interval.high 
+# setting in the elasticsearch.yml file. Since this is a common setting in Elasticsearch, 
+# changing its value might effect other schedules in the system.
+#
+# $ showcfg_cluster l | grep reload.interval.high
+#     "resource.reload.interval.high" : "5s",
+# 
