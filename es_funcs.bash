@@ -577,9 +577,30 @@ clear_excluded_nodes () {
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
-    # show info about who am i
+    # show auth info about who am i
     local env="$1"
     usage_chk1 "$env"|| return 1
     ${escmd["$env"]} GET '_xpack/security/_authenticate?pretty'
 }
 
+show_auth_roles () {
+    # show auth info about roles
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET '_xpack/security/role?pretty'
+}
+
+show_auth_rolemappings () {
+    # show auth info about role mappings
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET '_xpack/security/role_mapping?pretty'
+}
+
+evict_auth_cred_cache () {
+    # evict/clear users from the user cache
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} POST '_xpack/security/realm/ldap1/_clear_cache?pretty'
+    # https://www.elastic.co/guide/en/elasticsearch/reference/6.5/security-api-clear-cache.html
+}
