@@ -237,12 +237,12 @@ increase_balance_throttle () {
     THROTTLEINC=$(cat <<-EOM
         {
             "persistent": {
-                "cluster.routing.allocation.cluster_concurrent_rebalance" : "50",
-                "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "10",
-                "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "10",
-                "cluster.routing.allocation.node_concurrent_recoveries" : "40",
-                "cluster.routing.allocation.node_initial_primaries_recoveries" : "100",
-                "indices.recovery.max_bytes_per_sec" : "100mb"
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : "10",
+                "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "5",
+                "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "5",
+                "cluster.routing.allocation.node_concurrent_recoveries" : "20",
+                "cluster.routing.allocation.node_initial_primaries_recoveries" : "10",
+                "indices.recovery.max_bytes_per_sec" : "2000mb"
             }
         }
 	EOM
@@ -255,7 +255,7 @@ reset_balance_throttle () {
     # reset routing allocations for balancing & recoveries (throttle default)
     local env="$1"
     usage_chk1 "$env" || return 1
-    THROTTLEINC=$(cat <<-EOM
+    THROTTLERES=$(cat <<-EOM
         {
             "persistent": {
                 "cluster.routing.allocation.cluster_concurrent_rebalance" : null,
@@ -266,7 +266,7 @@ reset_balance_throttle () {
         }
 	EOM
     )
-    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings?include_defaults=true' -d "$THROTTLEINC")
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLERES")
     show_balance_throttle "$env"
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
 }
@@ -480,6 +480,28 @@ explain_allocations () {
     ${escmd[$env]} GET '_cluster/allocation/explain?pretty'
 }
 
+shorecov_hot_threads () {
+    # show hot thread details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_nodes/_local/hot_threads' | jq -C . | less -r
+}
+
+shorecov_idx_shard_stats () {
+    # show an index's shard stats
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd[$env]} GET ${idxArg}'/_stats?level=shards&pretty' | jq -C . | less -r
+}
+
+showrecov_stats () {
+    # show recovery stats (_recovery)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '/_recovery?pretty' | jq -C . | less -r
+}
+
 
 #6-----------------------------------------------
 # help funcs
@@ -525,7 +547,7 @@ delete_idx () {
 }
 
 #8-----------------------------------------------
-# node funcs
+# node mgmt funcs
 ##-----------------------------------------------
 exclude_node_name () {
     # exclude a node from cluster (node suffix)
