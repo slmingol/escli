@@ -285,7 +285,7 @@ show_recovery () {
     # show a summary of recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent' \
+    ${escmd[$env]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent,translog_ops_recovered,translog_ops,translog_ops_percent' \
         | grep -v done | head -40
 }
 
@@ -403,7 +403,7 @@ estop_recovery () {
     # watches the ES recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent&s=target_node,source_node,index' | grep -v done | head -40"
+    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent,translog_ops_recovered,translog_ops,translog_ops_percent&s=target_node,source_node,index' | grep -v done | head -40"
 }
 
 estop_relo () {
@@ -693,3 +693,10 @@ evict_auth_cred_cache () {
 # $ showcfg_cluster l | grep reload.interval.high
 #     "resource.reload.interval.high" : "5s",
 # 
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html
+#
+# ./esl GET '_nodes?pretty' | less
+# ./esl GET '_nodes/stats?pretty' | less
+# ./esl GET '_nodes/stats/indices?pretty' | less
+# ./esl GET 'filebeat-6.5.1-2019.06.03/_recovery?pretty' | less 
