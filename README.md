@@ -108,11 +108,8 @@ $ escli_ls
 escli_ls
 escli_lsl
 grep
-usage_chk1
-usage_chk2
-usage_chk3
-usage_chk4
-usage_chk5
+help_cat
+help_indices
 list_nodes
 list_nodes_storage
 show_shards
@@ -122,17 +119,17 @@ relo_shard
 cancel_relo_shard
 cancel_relo_shards_all
 retry_unassigned_shards
+show_balance_throttle
 increase_balance_throttle
 reset_balance_throttle
-show_balance_throttle
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
 disable_readonly_idx_pattern
 enable_readonly_idxs
 disable_readonly_idxs
-show_readonly_idxs_full
 show_readonly_idxs
+show_readonly_idxs_full
 estop
 estop_recovery
 estop_relo
@@ -140,28 +137,42 @@ show_health
 show_watermarks
 show_state
 showcfg_cluster
+showrecov_stats
+shorecov_hot_threads
+shorecov_idx_shard_stats
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
-help_cat
-help_indices
+show_shard_routing_allocation
+enable_shard_allocations
+disable_shard_allocations
 show_idx_sizes
 show_idx_stats
 delete_idx
-exclude_node_name
 show_excluded_nodes
+exclude_node_name
 clear_excluded_nodes
+eswhoami
+show_auth_roles
+show_auth_rolemappings
+evict_auth_cred_cache
 ```
 
 You can also get that list with a short description of each function:
 ```
-$ escli_lsl
+escli_lsl
 
-#1-----------------------------------------------
+#0-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
 escli_ls                          # list function names
 escli_lsl                         # list function names + desc.
+
+#1-----------------------------------------------
+# help funcs
+##-----------------------------------------------
+help_cat                          # print help for _cat API call
+help_indices                      # print help for _cat/indices API call
 
 #2-----------------------------------------------
 # node funcs
@@ -170,7 +181,7 @@ list_nodes                        # list ES nodes along w/ a list of data node s
 list_nodes_storage                # list ES nodes HDD usage
 
 #3-----------------------------------------------
-# shard funcs
+# shard mgmt funcs
 ##-----------------------------------------------
 show_shards                       # list all the index shards sorted by size (big->small)
 show_big_shards                   # list top 20 shards for a given node's suffix (1a, 1b, etc.)
@@ -179,11 +190,15 @@ relo_shard                        # move an indices' shard from node suffix X to
 cancel_relo_shard                 # cancel move of an index shard from node suffix X
 cancel_relo_shards_all            # cancel all shard RELOCATIONS in recovery queue
 retry_unassigned_shards           # reallocate all unassignable shards (elapsed past 5 retries)
-increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
-reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
-show_balance_throttle             # show routing allocations for balancing & recoveries (current)
 
 #4-----------------------------------------------
+# increase/decrease relo/recovery throttles
+##-----------------------------------------------
+show_balance_throttle             # show routing allocations for balancing & recoveries (current)
+increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
+reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
+
+#5-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery                     # show a summary of recovery queue
@@ -192,10 +207,10 @@ enable_readonly_idx_pattern       # set read_only_allow_delete flag for set of i
 disable_readonly_idx_pattern      # disable read_only_allow_delete flag for set of indices
 enable_readonly_idxs              # set read_only_allow_delete flag
 disable_readonly_idxs             # clear read_only_allow_delete flag
-show_readonly_idxs_full           # show read_only_allow_delete setting for all indices
 show_readonly_idxs                # show read_only_allow_delete setting which are enabled (true)
+show_readonly_idxs_full           # show read_only_allow_delete setting for all indices
 
-#5-----------------------------------------------
+#6-----------------------------------------------
 # stat funcs
 ##-----------------------------------------------
 estop                             # mimics `top` command, watching ES nodes CPU/MEM usage
@@ -205,29 +220,41 @@ show_health                       # cluster's health stats
 show_watermarks                   # show watermarks when storage marks readonly
 show_state                        # shows the state of the indicies' shards (RELO, Translog, etc.)
 showcfg_cluster                   # show all '_cluster/settings' configs
+showrecov_stats                   # show recovery stats (_recovery)
+shorecov_hot_threads              # show hot thread details
+shorecov_idx_shard_stats          # show an index's shard stats
+
+#7-----------------------------------------------
+# shard funcs
+##-----------------------------------------------
 showcfg_num_shards_per_idx        # show number of shards configured per index template
 showcfg_shard_allocations         # show cluster level shard allocation configs
 explain_allocations               # show details (aka. explain) cluster allocation activity
+show_shard_routing_allocation     # show status (cluster.routing.allocation.enable)
+enable_shard_allocations          # allow the allocator to route shards (cluster.routing.allocation.enable)
+disable_shard_allocations         # disallow the allocator to route shards (cluster.routing.allocation.enable)
 
-#6-----------------------------------------------
-# help funcs
-##-----------------------------------------------
-help_cat                          # print help for _cat API call
-help_indices                      # print help for _cat/indices API call
-
-#7-----------------------------------------------
-# index funcs
+#8-----------------------------------------------
+# index stat funcs
 ##-----------------------------------------------
 show_idx_sizes                    # show index sizes sorted (big -> small)
 show_idx_stats                    # show index stats sorted (big -> small)
 delete_idx                        # delete an index
 
-#8-----------------------------------------------
-# node funcs
+#9-----------------------------------------------
+# node exclude/include funcs
 ##-----------------------------------------------
-exclude_node_name                 # exclude a node from cluster (node suffix)
 show_excluded_nodes               # show excluded nodes from cluster
+exclude_node_name                 # exclude a node from cluster (node suffix)
 clear_excluded_nodes              # clear any excluded cluster nodes
+
+#10----------------------------------------------
+# auth funcs
+##-----------------------------------------------
+eswhoami                          # show auth info about who am i
+show_auth_roles                   # show auth info about roles
+show_auth_rolemappings            # show auth info about role mappings
+evict_auth_cred_cache             # evict/clear users from the user cache
 
 
 ```

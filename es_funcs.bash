@@ -25,12 +25,12 @@ filename="es_funcs.bash"
 #################################################
 
 
-#1-----------------------------------------------
+#0-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
 escli_ls () {
     # list function names
-    awk '/\(\)/ {print $1}' ${filename}
+    awk '/\(\)/ {print $1}' ${filename} | grep -v usage_chk
 }
 
 escli_lsl () {
@@ -43,7 +43,7 @@ escli_lsl () {
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
                 paste - - | pr -t -e30
         fi
-    done < <(awk '/^[a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}")
+    done < <(awk '/^[a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
 }
 
@@ -105,6 +105,27 @@ usage_chk5 () {
         && return 1
 }
 
+
+
+#1-----------------------------------------------
+# help funcs
+##-----------------------------------------------
+help_cat () {
+    # print help for _cat API call
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat'
+}
+
+help_indices () {
+    # print help for _cat/indices API call
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/indices?pretty&v&help' | less
+}
+
+
+
 #2-----------------------------------------------
 # node funcs
 ##-----------------------------------------------
@@ -134,7 +155,7 @@ list_nodes_storage () {
 
 
 #3-----------------------------------------------
-# shard funcs
+# shard mgmt funcs
 ##-----------------------------------------------
 show_shards () {
     # list all the index shards sorted by size (big->small)
@@ -230,6 +251,16 @@ retry_unassigned_shards () {
     echo "${cmdOutput}" | less
 }
 
+#4-----------------------------------------------
+# increase/decrease relo/recovery throttles
+##-----------------------------------------------
+show_balance_throttle () {
+    # show routing allocations for balancing & recoveries (current)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
+}
+
 increase_balance_throttle () {
     # increase routing allocations for balancing & recoveries (throttle open)
     local env="$1"
@@ -271,14 +302,9 @@ reset_balance_throttle () {
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
 }
 
-show_balance_throttle () {
-    # show routing allocations for balancing & recoveries (current)
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
-}
 
-#4-----------------------------------------------
+
+#5-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery () {
@@ -368,16 +394,6 @@ disable_readonly_idxs () {
     ${escmd[$env]} PUT '_all/_settings' -d "$ALLOWDEL"
 }
 
-show_readonly_idxs_full () {
-    # show read_only_allow_delete setting for all indices
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET \
-        '_all/_settings?pretty&filter_path=*.*.*.*.read_only_allow_delete' | \
-        paste - - - - - - - - - | \
-        column -t |  grep -v '}   }' | sort
-}
-
 show_readonly_idxs () {
     # show read_only_allow_delete setting which are enabled (true)
     local env="$1"
@@ -388,8 +404,19 @@ show_readonly_idxs () {
     printf "\n--------- end of check ----------------------------\n\n"
 }
 
+show_readonly_idxs_full () {
+    # show read_only_allow_delete setting for all indices
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET \
+        '_all/_settings?pretty&filter_path=*.*.*.*.read_only_allow_delete' | \
+        paste - - - - - - - - - | \
+        column -t |  grep -v '}   }' | sort
+}
 
-#5-----------------------------------------------
+
+
+#6-----------------------------------------------
 # stat funcs
 ##-----------------------------------------------
 estop () {
@@ -441,6 +468,33 @@ showcfg_cluster () {
     ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true'
 }
 
+showrecov_stats () {
+    # show recovery stats (_recovery)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '/_recovery?pretty' | jq -C . | less -r
+}
+
+shorecov_hot_threads () {
+    # show hot thread details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_nodes/_local/hot_threads' | jq -C . | less -r
+}
+
+shorecov_idx_shard_stats () {
+    # show an index's shard stats
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd[$env]} GET ${idxArg}'/_stats?level=shards&pretty' | jq -C . | less -r
+}
+
+
+
+#7-----------------------------------------------
+# shard funcs
+##-----------------------------------------------
 showcfg_num_shards_per_idx () {
     # show number of shards configured per index template
     local env="$1"
@@ -477,52 +531,50 @@ explain_allocations () {
     # show details (aka. explain) cluster allocation activity
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cluster/allocation/explain?pretty'
+    ${escmd[$env]} GET '_cluster/allocation/explain?pretty' | jq .
 }
 
-shorecov_hot_threads () {
-    # show hot thread details
+show_shard_routing_allocation () {
+    # show status (cluster.routing.allocation.enable)
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_nodes/_local/hot_threads' | jq -C . | less -r
+ showcfg_shard_allocations $env | grep cluster.routing.allocation.enable
 }
 
-shorecov_idx_shard_stats () {
-    # show an index's shard stats
-    local env="$1"
-    local idxArg="$2"
-    usage_chk3 "$env" "$idxArg" || return 1
-    ${escmd[$env]} GET ${idxArg}'/_stats?level=shards&pretty' | jq -C . | less -r
-}
-
-showrecov_stats () {
-    # show recovery stats (_recovery)
+enable_shard_allocations () {
+    # allow the allocator to route shards (cluster.routing.allocation.enable)
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '/_recovery?pretty' | jq -C . | less -r
+    ALLOW=$(cat <<-EOM
+        {
+         "transient": {
+           "cluster.routing.allocation.enable":   "all"
+         }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT '_all/_settings' -d "$ALLOW"
 }
 
-
-#6-----------------------------------------------
-# help funcs
-##-----------------------------------------------
-help_cat () {
-    # print help for _cat API call
+disable_shard_allocations () {
+    # disallow the allocator to route shards (cluster.routing.allocation.enable)
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cat'
+    DISALLOW=$(cat <<-EOM
+        {
+         "transient": {
+           "cluster.routing.allocation.enable":   "none"
+         }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT '_all/_settings' -d "$DISALLOW"
 }
 
-help_indices () {
-    # print help for _cat/indices API call
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cat/indices?pretty&v&help' | less
-}
 
 
-#7-----------------------------------------------
-# index funcs
+#8-----------------------------------------------
+# index stat funcs
 ##-----------------------------------------------
 show_idx_sizes () {
     # show index sizes sorted (big -> small)
@@ -546,9 +598,18 @@ delete_idx () {
     ${escmd[$env]} DELETE "$idxArg"
 }
 
-#8-----------------------------------------------
-# node mgmt funcs
+
+
+#9-----------------------------------------------
+# node exclude/include funcs
 ##-----------------------------------------------
+show_excluded_nodes () {
+    # show excluded nodes from cluster
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    showcfg_cluster "$env" | grep allocation.exclude
+}
+
 exclude_node_name () {
     # exclude a node from cluster (node suffix)
     local env="$1"
@@ -571,13 +632,6 @@ exclude_node_name () {
     ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
 }
 
-show_excluded_nodes () {
-    # show excluded nodes from cluster
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    showcfg_cluster "$env" | grep allocation.exclude
-}
-
 clear_excluded_nodes () {
     # clear any excluded cluster nodes
     local env="$1"
@@ -595,7 +649,9 @@ clear_excluded_nodes () {
     ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
 }
 
-#9-----------------------------------------------
+
+
+#10----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -626,6 +682,8 @@ evict_auth_cred_cache () {
     ${escmd["$env"]} POST '_xpack/security/realm/ldap1/_clear_cache?pretty'
     # https://www.elastic.co/guide/en/elasticsearch/reference/6.5/security-api-clear-cache.html
 }
+
+
 
 # $ ./esl GET '_xpack/security/_authenticate?pretty'
 # {
