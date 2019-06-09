@@ -553,7 +553,7 @@ enable_shard_allocations () {
         }
 	EOM
     )
-    ${escmd[$env]} PUT '_all/_settings' -d "$ALLOW"
+    ${escmd[$env]} PUT '_cluster/settings' -d "$ALLOW"
 }
 
 disable_shard_allocations () {
@@ -568,7 +568,7 @@ disable_shard_allocations () {
         }
 	EOM
     )
-    ${escmd[$env]} PUT '_all/_settings' -d "$DISALLOW"
+    ${escmd[$env]} PUT '_cluster/settings' -d "$DISALLOW"
 }
 
 
