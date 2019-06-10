@@ -417,7 +417,7 @@ show_readonly_idxs_full () {
 
 
 #6-----------------------------------------------
-# stat funcs
+# health/stat funcs
 ##-----------------------------------------------
 estop () {
     # mimics `top` command, watching ES nodes CPU/MEM usage
@@ -596,6 +596,22 @@ delete_idx () {
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
     ${escmd[$env]} DELETE "$idxArg"
+}
+
+showcfg_idx () {
+    # show all '<index name>/_settings' configs
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd[$env]} GET ${idxArg}'/_settings?pretty' | jq -C . | less -r
+}
+
+showcfg_idx_stats () {
+    # show all '<index name>/_stats'
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd[$env]} GET ${idxArg}'/_stats?pretty' | jq -C . | less -r
 }
 
 
