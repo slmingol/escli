@@ -149,6 +149,8 @@ disable_shard_allocations
 show_idx_sizes
 show_idx_stats
 delete_idx
+showcfg_idx
+showcfg_idx_stats
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -156,6 +158,7 @@ eswhoami
 show_auth_roles
 show_auth_rolemappings
 evict_auth_cred_cache
+create_bearer_token
 ```
 
 You can also get that list with a short description of each function:
@@ -211,7 +214,7 @@ show_readonly_idxs                # show read_only_allow_delete setting which ar
 show_readonly_idxs_full           # show read_only_allow_delete setting for all indices
 
 #6-----------------------------------------------
-# stat funcs
+# health/stat funcs
 ##-----------------------------------------------
 estop                             # mimics `top` command, watching ES nodes CPU/MEM usage
 estop_recovery                    # watches the ES recovery queue
@@ -240,6 +243,8 @@ disable_shard_allocations         # disallow the allocator to route shards (clus
 show_idx_sizes                    # show index sizes sorted (big -> small)
 show_idx_stats                    # show index stats sorted (big -> small)
 delete_idx                        # delete an index
+showcfg_idx                       # show all '<index name>/_settings' configs
+showcfg_idx_stats                 # show all '<index name>/_stats'
 
 #9-----------------------------------------------
 # node exclude/include funcs
@@ -255,6 +260,7 @@ eswhoami                          # show auth info about who am i
 show_auth_roles                   # show auth info about roles
 show_auth_rolemappings            # show auth info about role mappings
 evict_auth_cred_cache             # evict/clear users from the user cache
+create_bearer_token               # create bearer token for user
 
 
 ```
