@@ -677,18 +677,25 @@ eswhoami () {
     ${escmd["$env"]} GET '_xpack/security/_authenticate?pretty'
 }
 
-show_auth_roles () {
+showcfg_auth_roles () {
     # show auth info about roles
     local env="$1"
     usage_chk1 "$env"|| return 1
     ${escmd["$env"]} GET '_xpack/security/role?pretty'
 }
 
-show_auth_rolemappings () {
+showcfg_auth_rolemappings () {
     # show auth info about role mappings
     local env="$1"
     usage_chk1 "$env"|| return 1
     ${escmd["$env"]} GET '_xpack/security/role_mapping?pretty'
+}
+
+list_auth_roles () {
+    # list all roles
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET "_xpack/security/role?pretty" | jq 'to_entries[] | .key' | sed "s/\"//g" | sort
 }
 
 evict_auth_cred_cache () {
@@ -716,6 +723,20 @@ create_bearer_token () {
 
 
 
+# PUT /_security/role_mapping/bw_elasticsearch_ro
+# {
+#   "roles": [ "bw_elasticsearch_ro"],
+#   "enabled": true, 
+#   "rules": {
+#     "field" : { "groups" : "cn=ipausers,cn=groups,cn=accounts,dc=bandwidthclec,dc=com" }
+#   },
+#   "metadata" : { 
+#     "version" : 1
+#   }
+# }
+#
+# DELETE /_security/role_mapping/elasticsearch_ro
+#
 # $ ./esl GET '_xpack/security/_authenticate?pretty'
 # {
 #   "username" : "someuser",
