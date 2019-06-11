@@ -603,7 +603,7 @@ showcfg_idx () {
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
-    ${escmd[$env]} GET ${idxArg}'/_settings?pretty' | jq -C . | less -r
+    ${escmd[$env]} GET ${idxArg}'/_settings?pretty&flat_settings=true&include_defaults=true' | jq -C . | less -r
 }
 
 showcfg_idx_stats () {
