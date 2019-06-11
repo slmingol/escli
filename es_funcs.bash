@@ -699,6 +699,21 @@ evict_auth_cred_cache () {
     # https://www.elastic.co/guide/en/elasticsearch/reference/6.5/security-api-clear-cache.html
 }
 
+create_bearer_token () {
+    # create bearer token for user
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    CREDS=$(cat <<-EOM
+        {
+         "grant_type": "password",
+         "username"  : "XXXXXXXX",
+         "password"  : "YYYYYYYY"
+        }
+	EOM
+    )
+    ${escmd["$env"]} POST '_xpack/security/oauth2/token?pretty' -d "$CREDS"
+}
+
 
 
 # $ ./esl GET '_xpack/security/_authenticate?pretty'
