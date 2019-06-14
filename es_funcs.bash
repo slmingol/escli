@@ -614,6 +614,20 @@ showcfg_idx_stats () {
     ${escmd[$env]} GET ${idxArg}'/_stats?pretty' | jq -C . | less -r
 }
 
+show_idx_version_cnts () {
+    # show index sizes sorted (big -> small)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    (
+    printf "\n%10s%10s"   "occurrences" "index"
+    printf "\n%10s%10s\n" "-----------" "-----"
+    show_idx_sizes "$env" | awk '{print $1}' | \
+        grep -E 'beat|f5|syslog' | \
+        grep -v '^\.' | sed 's/-2019.*//' | sort | uniq -c
+    printf "\n"
+    ) | column -t
+}
+
 
 
 #9-----------------------------------------------

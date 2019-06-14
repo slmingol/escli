@@ -151,19 +151,21 @@ show_idx_stats
 delete_idx
 showcfg_idx
 showcfg_idx_stats
+show_idx_version_cnts
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
 eswhoami
-show_auth_roles
-show_auth_rolemappings
+showcfg_auth_roles
+showcfg_auth_rolemappings
+list_auth_roles
 evict_auth_cred_cache
 create_bearer_token
 ```
 
 You can also get that list with a short description of each function:
 ```
-escli_lsl
+$ escli_lsl
 
 #0-----------------------------------------------
 # usage funcs
@@ -245,6 +247,7 @@ show_idx_stats                    # show index stats sorted (big -> small)
 delete_idx                        # delete an index
 showcfg_idx                       # show all '<index name>/_settings' configs
 showcfg_idx_stats                 # show all '<index name>/_stats'
+show_idx_version_cnts             # show index sizes sorted (big -> small)
 
 #9-----------------------------------------------
 # node exclude/include funcs
@@ -257,8 +260,9 @@ clear_excluded_nodes              # clear any excluded cluster nodes
 # auth funcs
 ##-----------------------------------------------
 eswhoami                          # show auth info about who am i
-show_auth_roles                   # show auth info about roles
-show_auth_rolemappings            # show auth info about role mappings
+showcfg_auth_roles                # show auth info about roles
+showcfg_auth_rolemappings         # show auth info about role mappings
+list_auth_roles                   # list all roles
 evict_auth_cred_cache             # evict/clear users from the user cache
 create_bearer_token               # create bearer token for user
 
