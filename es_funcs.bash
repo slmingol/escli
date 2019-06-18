@@ -302,6 +302,23 @@ reset_balance_throttle () {
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
 }
 
+change_allocation_threshold () {
+    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ALLOC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.balance.threshold"  :   2.0
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$ALLOC")
+    #showcfg_cluster "$env" | jq .persistent
+    showcfg_shard_allocations "$env"
+}
+
 
 
 #5-----------------------------------------------
@@ -490,6 +507,13 @@ shorecov_idx_shard_stats () {
     ${escmd[$env]} GET ${idxArg}'/_stats?level=shards&pretty' | jq -C . | less -r
 }
 
+show_stats_cluster () {
+    # shows the _stats for entire cluster
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_stats?human&pretty' | jq -C . | less -r
+}
+
 
 
 #7-----------------------------------------------
@@ -531,8 +555,51 @@ explain_allocations () {
     # show details (aka. explain) cluster allocation activity
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cluster/allocation/explain?pretty' | jq .
+    ${escmd[$env]} GET '_cluster/allocation/explain?pretty' | jq -C . | less -r
 }
+
+explain_allocations_hddinfo () {
+    # show details (aka. explain) cluster allocation activity (full)
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    EXPLAINL=$(cat <<-EOM
+        {
+            "index": "${idxArg}",
+            "shard": 0,
+            "primary": false
+        }
+	EOM
+    )
+    ${escmd[$env]} GET '_cluster/allocation/explain?pretty&human&include_yes_decisions=true' \
+        -d "$EXPLAIN" | jq -C . | less -r
+}
+
+#$ ./esp GET '_cluster/allocation/explain?pretty&include_disk_info=true&include_yes_decisions=true&human' -d '{"index":"filebeat-6.2.2-2019.05.05", "shard": 0, "primary": true}'| jq -C '.cluster_info.shard_sizes | with_entries(select(.key|test("_bytes")|not))' | head
+#{
+#  "[metricbeat-6.6.1-2019.05.11][4][p]": "17mb",
+#  "[filebeat-6.6.1-2019.05.18][4][p]": "4.2mb",
+#  "[syslog-2019.05.23][0][r]": "74.4gb",
+#  "[filebeat-6.6.1-2019.06.15][3][r]": "5.4mb",
+#  "[filebeat-6.6.1-2019.04.20][2][r]": "4.1mb",
+#  "[syslog-2019.05.01][0][r]": "58gb",
+#  "[packetbeat-6.5.1-2019.05.19][0][r]": "25.8gb",
+#  "[filebeat-6.5.1-2019.06.16][1][p]": "14.4gb",
+#  "[filebeat-6.6.1-2019.05.24][2][r]": "4.2mb",
+#
+#$ ./esp GET '_cluster/allocation/explain?pretty&include_yes_decisions=true&human' -d '{"index":"filebeat-6.2.2-2019.05.05", "shard": 0, "primary": true}'| jq -C '.' | head
+#{
+#  "index": "filebeat-6.2.2-2019.05.05",
+#  "shard": 0,
+#  "primary": true,
+#  "current_state": "started",
+#  "current_node": {
+#    "id": "dsL3ZeMeQqmvigirSYy6Tw",
+#    "name": "rdu-es-data-01a",
+#    "transport_address": "192.168.33.195:9300",
+#    "attributes": {
+#
+# https://github.com/stedolan/jq/issues/966
 
 show_shard_routing_allocation () {
     # show status (cluster.routing.allocation.enable)
@@ -824,3 +891,8 @@ create_bearer_token () {
 # ./esl GET '_nodes/stats?pretty' | less
 # ./esl GET '_nodes/stats/indices?pretty' | less
 # ./esl GET 'filebeat-6.5.1-2019.06.03/_recovery?pretty' | less 
+
+# translogs and recovery
+# - https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-translog.html
+# - https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-recovery.html
+# - https://www.elastic.co/guide/en/elasticsearch/guide/current/translog.html
