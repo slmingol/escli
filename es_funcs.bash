@@ -779,6 +779,13 @@ list_auth_roles () {
     ${escmd["$env"]} GET "_xpack/security/role?pretty" | jq 'to_entries[] | .key' | sed "s/\"//g" | sort
 }
 
+list_auth_rolemappings () {
+    # list all rolemappings
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET "_xpack/security/role_mapping?pretty" | jq 'to_entries[] | .key' | sed "s/\"//g" | sort
+}
+
 evict_auth_cred_cache () {
     # evict/clear users from the user cache
     local env="$1"
