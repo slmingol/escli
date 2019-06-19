@@ -665,7 +665,7 @@ delete_idx () {
     ${escmd[$env]} DELETE "$idxArg"
 }
 
-showcfg_idx () {
+showcfg_idx_cfgs () {
     # show all '<index name>/_settings' configs
     local env="$1"
     local idxArg="$2"

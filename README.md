@@ -122,6 +122,7 @@ retry_unassigned_shards
 show_balance_throttle
 increase_balance_throttle
 reset_balance_throttle
+change_allocation_threshold
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
@@ -140,16 +141,18 @@ showcfg_cluster
 showrecov_stats
 shorecov_hot_threads
 shorecov_idx_shard_stats
+show_stats_cluster
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
+explain_allocations_hddinfo
 show_shard_routing_allocation
 enable_shard_allocations
 disable_shard_allocations
 show_idx_sizes
 show_idx_stats
 delete_idx
-showcfg_idx
+showcfg_idx_cfgs
 showcfg_idx_stats
 show_idx_version_cnts
 show_excluded_nodes
@@ -159,6 +162,7 @@ eswhoami
 showcfg_auth_roles
 showcfg_auth_rolemappings
 list_auth_roles
+list_auth_rolemappings
 evict_auth_cred_cache
 create_bearer_token
 ```
@@ -202,6 +206,7 @@ retry_unassigned_shards           # reallocate all unassignable shards (elapsed 
 show_balance_throttle             # show routing allocations for balancing & recoveries (current)
 increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
 reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
+change_allocation_threshold       # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
 #5-----------------------------------------------
 # recovery funcs
@@ -228,6 +233,7 @@ showcfg_cluster                   # show all '_cluster/settings' configs
 showrecov_stats                   # show recovery stats (_recovery)
 shorecov_hot_threads              # show hot thread details
 shorecov_idx_shard_stats          # show an index's shard stats
+show_stats_cluster                # shows the _stats for entire cluster
 
 #7-----------------------------------------------
 # shard funcs
@@ -235,6 +241,7 @@ shorecov_idx_shard_stats          # show an index's shard stats
 showcfg_num_shards_per_idx        # show number of shards configured per index template
 showcfg_shard_allocations         # show cluster level shard allocation configs
 explain_allocations               # show details (aka. explain) cluster allocation activity
+explain_allocations_hddinfo       # show details (aka. explain) cluster allocation activity (full)
 show_shard_routing_allocation     # show status (cluster.routing.allocation.enable)
 enable_shard_allocations          # allow the allocator to route shards (cluster.routing.allocation.enable)
 disable_shard_allocations         # disallow the allocator to route shards (cluster.routing.allocation.enable)
@@ -245,7 +252,7 @@ disable_shard_allocations         # disallow the allocator to route shards (clus
 show_idx_sizes                    # show index sizes sorted (big -> small)
 show_idx_stats                    # show index stats sorted (big -> small)
 delete_idx                        # delete an index
-showcfg_idx                       # show all '<index name>/_settings' configs
+showcfg_idx_cfgs                  # show all '<index name>/_settings' configs
 showcfg_idx_stats                 # show all '<index name>/_stats'
 show_idx_version_cnts             # show index sizes sorted (big -> small)
 
@@ -263,6 +270,7 @@ eswhoami                          # show auth info about who am i
 showcfg_auth_roles                # show auth info about roles
 showcfg_auth_rolemappings         # show auth info about role mappings
 list_auth_roles                   # list all roles
+list_auth_rolemappings            # list all rolemappings
 evict_auth_cred_cache             # evict/clear users from the user cache
 create_bearer_token               # create bearer token for user
 
