@@ -1,0 +1,20 @@
+#################################################
+### props used by zencli.bash
+#################################################
+
+##### Examples
+
+#--- plain text ----------------------------------#
+# usernameCmd='echo someusername'
+# passwordCmd='echo somepassword'
+
+#--- lastpass (lpass cli) ------------------------#
+# usernameCmd='lpass show --username example.com'
+# passwordCmd='lpass show --password example.com'
+
+usernameCmd='lpass show --username somedom.com'
+passwordCmd='lpass show --password somedom.com'
+
+hostname="zenoss.somedom.com"
+zenBaseUrl="https://${hostname}/zport/dmd/template_router"
+contType="Content-Type: application/json"
