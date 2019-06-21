@@ -11,6 +11,11 @@ esnode[l]="lab-${nodeBaseName}"
 esnode[p]="${nodeBaseName}"
 esnode[c]="instance-0000000"
 
+### zenoss wrapper cmd inventory
+declare -A zencmd
+zencmd[l]="./zsl"
+zencmd[p]="./zsp"
+
 filename="es_funcs.bash"
 
 #################################################
@@ -152,7 +157,25 @@ list_nodes_storage () {
     printf "valid data node suffixes: %s\n\n" "${dnodes}"
 }
 
-
+list_nodes_zenoss_alarms () {
+    # list ES node HDD usage alarms in Zenoss
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ips=$(${escmd[$env]} GET '_cat/nodes?h=ip,node.role,name' | awk '$2~/d/ {print $1" "$3}')
+    printf "\n"
+    printf "%-20s%-32s%-32s\n" "server" "zenoss alarm #1" "zenoss alarm #2"
+    printf "%-20s%-32s%-32s\n" "======" "===============" "==============="
+    set -- $ips
+    (
+        while [ ! -z "$1" ]; do
+            printf "%-20s%-s\n" \
+                "${2}" \
+                "$(${zencmd[$env]} $1 | jq ".result.data[].maxval" | paste - -)"
+            shift 2
+        done
+    ) | sort -k1,1
+    printf "\n\n"
+}
 
 #3-----------------------------------------------
 # shard mgmt funcs
