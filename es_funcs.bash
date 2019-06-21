@@ -309,7 +309,7 @@ change_allocation_threshold () {
     ALLOC=$(cat <<-EOM
         {
             "persistent": {
-                "cluster.routing.allocation.balance.threshold"  :   2.0
+                "cluster.routing.allocation.balance.threshold"  :   3.0
             }
         }
 	EOM
