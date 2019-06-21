@@ -9,11 +9,11 @@
 # passwordCmd='echo somepassword'
 
 #--- lastpass (lpass cli) ------------------------#
-# usernameCmd='lpass show --username bandwidth.com'
-# passwordCmd='lpass show --password bandwidth.com'
+# usernameCmd='lpass show --username example.com'
+# passwordCmd='lpass show --password example.com'
 
-usernameCmd='lpass show --username bandwidth.com'
-passwordCmd='lpass show --password bandwidth.com'
+usernameCmd='lpass show --username somedom.com'
+passwordCmd='lpass show --password somedom.com'
 
-esBaseUrl="https://es-data-01a.${env}.bandwidthclec.local:9200"
+esBaseUrl="https://es-data-01a.${env}.somedom.com:9200"
 contType="Content-Type: application/json"

@@ -9,8 +9,8 @@
 # passwordCmd='echo somepassword'
 
 #--- lastpass (lpass cli) ------------------------#
-# usernameCmd='lpass show --username bandwidth.com'
-# passwordCmd='lpass show --password bandwidth.com'
+# usernameCmd='lpass show --username example.com'
+# passwordCmd='lpass show --password example.com'
 
 usernameCmd='lpass show --username found.io'
 passwordCmd='lpass show --password found.io'
