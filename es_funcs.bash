@@ -480,6 +480,13 @@ estop_relo () {
     watch "${escmd["$env"]} GET '_cat/shards?v&h=index,shard,prirep,state,docs,store,node&s=index:desc' | grep -v STARTED | head -40"
 }
 
+estop_tasks () {
+    # watches ES tasks
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch "${escmd["$env"]} GET '_cat/tasks?pretty&detailed&v' | column -t | head -40"
+}
+
 show_health () {
     # cluster's health stats
     local env="$1"
