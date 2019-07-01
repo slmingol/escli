@@ -107,11 +107,11 @@ This is a list of the functions it provides:
 $ escli_ls
 escli_ls
 escli_lsl
-grep
 help_cat
 help_indices
 list_nodes
 list_nodes_storage
+list_nodes_zenoss_alarms
 show_shards
 show_big_shards
 show_small_shards
@@ -134,6 +134,7 @@ show_readonly_idxs_full
 estop
 estop_recovery
 estop_relo
+estop_tasks
 show_health
 show_watermarks
 show_state
@@ -188,6 +189,7 @@ help_indices                      # print help for _cat/indices API call
 ##-----------------------------------------------
 list_nodes                        # list ES nodes along w/ a list of data node suffixes for use by other cmds.
 list_nodes_storage                # list ES nodes HDD usage
+list_nodes_zenoss_alarms          # list ES node HDD usage alarms in Zenoss
 
 #3-----------------------------------------------
 # shard mgmt funcs
@@ -226,6 +228,7 @@ show_readonly_idxs_full           # show read_only_allow_delete setting for all 
 estop                             # mimics `top` command, watching ES nodes CPU/MEM usage
 estop_recovery                    # watches the ES recovery queue
 estop_relo                        # watches ES relocations
+estop_tasks                       # watches ES tasks
 show_health                       # cluster's health stats
 show_watermarks                   # show watermarks when storage marks readonly
 show_state                        # shows the state of the indicies' shards (RELO, Translog, etc.)

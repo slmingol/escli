@@ -35,7 +35,7 @@ filename="es_funcs.bash"
 ##-----------------------------------------------
 escli_ls () {
     # list function names
-    awk '/\(\)/ {print $1}' ${filename} | grep -v usage_chk
+    awk '/\(\)/ {print $1}' ${filename} | grep -vE "usage_chk|grep"
 }
 
 escli_lsl () {
