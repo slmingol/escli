@@ -454,6 +454,24 @@ show_readonly_idxs_full () {
         column -t |  grep -v '}   }' | sort
 }
 
+set_idx_default_field () {
+    # set index.query.default_field => [ "*" ]
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    DEFFIELD=$(cat <<-EOM
+        {
+         "index": {
+           "query": {
+             "default_field": [ "*" ]
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
+}
+
 
 
 #6-----------------------------------------------
@@ -933,3 +951,15 @@ create_bearer_token () {
 # - https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-translog.html
 # - https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-recovery.html
 # - https://www.elastic.co/guide/en/elasticsearch/guide/current/translog.html
+
+
+### collect logs
+# $ for node in es-master-01{a..c} es-data-01{a..c}; do ssh ${node}.lab1.bandwidthclec.local 'sudo sh -c "tar zcvf - /var/log/elasticsearch/*.log"' > ${node}.lab1.tgz;done
+
+# $ ./esl GET '_nodes/settings?pretty' | jq '.[] | .. | objects | .unicast.hosts | select(. != null)' | grep -vE '\[|\]' | sort -u | cut -d'"' -f2
+#es-data-01a.lab1.bandwidthclec.local
+#es-data-01b.lab1.bandwidthclec.local
+#es-data-01c.lab1.bandwidthclec.local
+#es-master-01a.lab1.bandwidthclec.local
+#es-master-01b.lab1.bandwidthclec.local
+#es-master-01c.lab1.bandwidthclec.local
