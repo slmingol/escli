@@ -472,6 +472,24 @@ set_idx_default_field () {
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
 }
 
+set_tmplate_default_field () {
+    # set template index.query.default_field => [ "*" ]
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    DEFFIELD=$(cat <<-EOM
+        {
+         "index": {
+           "query": {
+             "default_field": [ "*" ]
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
+}
+
 
 
 #6-----------------------------------------------
