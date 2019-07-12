@@ -520,7 +520,7 @@ estop_tasks () {
     # watches ES tasks
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/tasks?pretty&detailed&v' | column -t | head -40"
+    watch "${escmd["$env"]} GET '_cat/tasks?pretty&detailed&v' | head -40"
 }
 
 show_health () {
