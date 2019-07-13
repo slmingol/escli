@@ -48,7 +48,7 @@ escli_lsl () {
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
                 paste - - | pr -t -e30
         fi
-    done < <(awk '/^[a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
+    done < <(awk '/^[0-9a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
 }
 
@@ -108,6 +108,30 @@ usage_chk5 () {
         && $toCode =~ 1[a-z] ]] && return 0 || \
         printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from node> <to node>\n\n" \
         && return 1
+}
+
+usage_chk6 () {
+    # usage msg for cmds w/ 4 arg (<k8s namespace> <start time> <end time>)
+    local env="$1"
+    local idxArg="$2"
+    local namespace="$3"
+    local sTime="$4"
+    local eTime="$5"
+
+    [[ $env =~ [lpc] && $idxArg != '' \
+            && $namespace != '' \
+            && $sTime != '' \
+            && $sTime =~ [0-9]{4}-[0-9]{2}-[0-9]{2}T && $sTime =~ [0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}Z \
+            && $eTime != '' \
+            && $eTime =~ [0-9]{4}-[0-9]{2}-[0-9]{2}T && $eTime =~ [0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}Z ]] \
+        && return 0 || \
+            printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern> <k8s namespace> <start time> <end time>\n\n\n" \
+                && printf "  * TIME FORMAT: 2019-07-10T00:00:00.000Z\n\n" \
+                && printf "  * INDX FORMAT:\n      -- %s\n      -- %s\n      -- %s\n\n\n" \
+                    "filebeat-*" \
+                    "-or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,...." \
+                    "-or- filebeat-*-2019.07*" \
+       && return 1
 }
 
 
@@ -520,7 +544,7 @@ estop_tasks () {
     # watches ES tasks
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/tasks?pretty&detailed&v' | head -40"
+    watch "${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | head -40"
 }
 
 show_health () {
@@ -578,6 +602,13 @@ show_stats_cluster () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_stats?human&pretty' | jq -C . | less -r
+}
+
+show_tasks_stats () {
+    # shows the tasks queue
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/tasks?human&pretty&detailed&v'
 }
 
 
@@ -875,6 +906,90 @@ create_bearer_token () {
     ${escmd["$env"]} POST '_xpack/security/oauth2/token?pretty' -d "$CREDS"
 }
 
+
+
+#11----------------------------------------------
+# k8s namespace funcs
+##-----------------------------------------------
+del_docs_k8s_ns_range () {
+    # delete k8s namespace docs over a specific time range
+    local env="$1"
+    local idxArg="$2"
+    local ns="$3"
+    local stime="$4"
+    local etime="$5"
+    usage_chk6 "$env" "$idxArg" "$ns" "$stime" "$etime" || return 1
+    DELQUERY=$(cat <<-EOM
+        {
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "match_phrase": {
+                    "kubernetes.namespace": {
+                      "query": "${ns}"
+                    }
+                  }
+                },
+                {
+                  "range": {
+                    "@timestamp": {
+                      "format": "strict_date_optional_time",
+                      "gte": "${stime}",
+                      "lte": "${etime}"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd["$env"]} POST "${idxArg}/_delete_by_query?conflicts=proceed&wait_for_completion=false" -d "$DELQUERY"
+    # eg: 
+    # $ del_docs_k8s_ns_range l filebeat-* big-dipper-perf 2019-07-11T11:57:20.968Z 2019-07-12T04:26:38.757Z
+    # {"task":"vudQxvnfSQuxMtdkq8ZTUQ:844209600"}
+
+    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
+}
+
+estail_deletebyquery () {
+    # watch deletebyquery tasks
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    while [ 1 ]; do
+        clear
+        cmd=$(${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | grep 'delete/byquery')
+        status=$?
+
+        echo "${FUNCNAME[0]}"
+        echo "==================================="
+        echo "$cmd" | column -t
+        [ $status -ne 0 ] && echo "done" && break
+        echo "==================================="
+        sleep 10
+    done
+}
+
+estail_forcemerge () {
+    # watch forcemerges in tasks queue
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    while [ 1 ]; do
+        clear
+        cmd=$(${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | grep merg)
+
+        status=$?
+
+        echo "${FUNCNAME[0]}"
+        echo "==================================="
+        echo "$cmd" | column -t
+        [ $status -ne 0 ] && echo "done" && break
+        echo "==================================="
+        sleep 10
+    done
+}
 
 
 # PUT /_security/role_mapping/bw_elasticsearch_ro
