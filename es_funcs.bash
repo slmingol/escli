@@ -958,8 +958,10 @@ estail_deletebyquery () {
     # watch deletebyquery tasks
     local env="$1"
     usage_chk1 "$env"|| return 1
+    cnt=0
     while [ 1 ]; do
-        clear
+        cnt=$((cnt+1))
+        [ $cnt -eq 5 ] && clear && cnt=0
         cmd=$(${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | grep 'delete/byquery')
         status=$?
 
@@ -977,9 +979,9 @@ estail_forcemerge () {
     local env="$1"
     usage_chk1 "$env"|| return 1
     while [ 1 ]; do
-        clear
+        cnt=$((cnt+1))
+        [ $cnt -eq 5 ] && clear && cnt=0
         cmd=$(${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | grep merg)
-
         status=$?
 
         echo "${FUNCNAME[0]}"
