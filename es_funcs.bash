@@ -958,7 +958,7 @@ estail_deletebyquery () {
     # watch deletebyquery tasks
     local env="$1"
     usage_chk1 "$env"|| return 1
-    cnt=0
+    clear && cnt=0
     while [ 1 ]; do
         cnt=$((cnt+1))
         [ $cnt -eq 5 ] && clear && cnt=0
@@ -978,6 +978,7 @@ estail_forcemerge () {
     # watch forcemerges in tasks queue
     local env="$1"
     usage_chk1 "$env"|| return 1
+    clear && cnt=0
     while [ 1 ]; do
         cnt=$((cnt+1))
         [ $cnt -eq 5 ] && clear && cnt=0
