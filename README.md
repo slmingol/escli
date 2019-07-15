@@ -131,6 +131,8 @@ enable_readonly_idxs
 disable_readonly_idxs
 show_readonly_idxs
 show_readonly_idxs_full
+set_idx_default_field
+set_tmplate_default_field
 estop
 estop_recovery
 estop_relo
@@ -143,6 +145,7 @@ showrecov_stats
 shorecov_hot_threads
 shorecov_idx_shard_stats
 show_stats_cluster
+show_tasks_stats
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
@@ -166,6 +169,10 @@ list_auth_roles
 list_auth_rolemappings
 evict_auth_cred_cache
 create_bearer_token
+del_docs_k8s_ns_range
+forcemerge_to_expunge_deletes
+estail_deletebyquery
+estail_forcemerge
 ```
 
 You can also get that list with a short description of each function:
@@ -221,6 +228,8 @@ enable_readonly_idxs              # set read_only_allow_delete flag
 disable_readonly_idxs             # clear read_only_allow_delete flag
 show_readonly_idxs                # show read_only_allow_delete setting which are enabled (true)
 show_readonly_idxs_full           # show read_only_allow_delete setting for all indices
+set_idx_default_field             # set index.query.default_field => [ "*" ]
+set_tmplate_default_field         # set template index.query.default_field => [ "*" ]
 
 #6-----------------------------------------------
 # health/stat funcs
@@ -237,6 +246,7 @@ showrecov_stats                   # show recovery stats (_recovery)
 shorecov_hot_threads              # show hot thread details
 shorecov_idx_shard_stats          # show an index's shard stats
 show_stats_cluster                # shows the _stats for entire cluster
+show_tasks_stats                  # shows the tasks queue
 
 #7-----------------------------------------------
 # shard funcs
@@ -276,6 +286,14 @@ list_auth_roles                   # list all roles
 list_auth_rolemappings            # list all rolemappings
 evict_auth_cred_cache             # evict/clear users from the user cache
 create_bearer_token               # create bearer token for user
+
+#11----------------------------------------------
+# k8s namespace funcs
+##-----------------------------------------------
+del_docs_k8s_ns_range             # delete k8s namespace docs over a specific time range
+forcemerge_to_expunge_deletes     # force merge of shards to expunge deleted docs
+estail_deletebyquery              # watch deletebyquery tasks
+estail_forcemerge                 # watch forcemerges in tasks queue
 
 
 ```

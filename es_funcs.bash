@@ -954,6 +954,14 @@ del_docs_k8s_ns_range () {
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
 }
 
+forcemerge_to_expunge_deletes () {
+    # force merge of shards to expunge deleted docs
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd["$env"]} POST "${idxArg}/_forcemerge?only_expunge_deletes=true"
+}
+
 estail_deletebyquery () {
     # watch deletebyquery tasks
     local env="$1"
@@ -993,6 +1001,7 @@ estail_forcemerge () {
         sleep 10
     done
 }
+
 
 
 # PUT /_security/role_mapping/bw_elasticsearch_ro
