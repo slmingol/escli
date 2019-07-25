@@ -133,6 +133,7 @@ show_readonly_idxs
 show_readonly_idxs_full
 set_idx_default_field
 set_tmplate_default_field
+set_idx_num_replicas_to_X
 estop
 estop_recovery
 estop_relo
