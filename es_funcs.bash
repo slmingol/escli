@@ -118,6 +118,9 @@ usage_chk6 () {
     local sTime="$4"
     local eTime="$5"
 
+    [[ $env =~ [lpc] && $idxArg != '' ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern>\n\n" \
+        && return 1
     [[ $env =~ [lpc] && $idxArg != '' \
             && $namespace != '' \
             && $sTime != '' \
@@ -132,6 +135,17 @@ usage_chk6 () {
                     "-or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,...." \
                     "-or- filebeat-*-2019.07*" \
        && return 1
+}
+
+usage_chk7 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
+    local env="$1"
+    local idxArg="$2"
+    local repNum="$3"
+
+    [[ $env =~ [lpc] && $idxArg != '' && ( $repNum =~ ^[0-9]{1,2}$ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern> <shard replica count>\n\n" \
+        && return 1
 }
 
 
@@ -512,6 +526,24 @@ set_tmplate_default_field () {
 	EOM
     )
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
+}
+
+set_idx_num_replicas_to_X () {
+    # set an index's number_of_replicas to X
+    local env="$1"
+    local idxArg="$2"
+    local numReps="$3"
+    usage_chk7 "$env" "$idxArg" "$numReps" || return 1
+    NUMREP=$(cat <<-EOM
+        {
+         "index": {
+           "number_of_replicas": ${numReps},
+           "auto_expand_replicas": false
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings?pretty" -d "$NUMREP"
 }
 
 
@@ -1108,3 +1140,87 @@ estail_forcemerge () {
 #es-master-01a.lab1.bandwidthclec.local
 #es-master-01b.lab1.bandwidthclec.local
 #es-master-01c.lab1.bandwidthclec.local
+
+
+### nodes stats
+#$ ./esl GET '_nodes/_local/stats?pretty'
+#{
+#  "_nodes" : {
+#    "total" : 1,
+#    "successful" : 1,
+#    "failed" : 0
+#  },
+#  "cluster_name" : "lab-rdu-es-01",
+#  "nodes" : {
+#    "vudQxvnfSQuxMtdkq8ZTUQ" : {
+#      "timestamp" : 1563811322882,
+#      "name" : "lab-rdu-es-data-01a",
+#      "transport_address" : "192.168.112.141:9300",
+#      "host" : "192.168.112.141",
+#      "ip" : "192.168.112.141:9300",
+#      "roles" : [
+#        "data"
+#      ],
+#      "attributes" : {
+#        "ml.machine_memory" : "134905458688",
+#        "xpack.installed" : "true",
+#        "ml.max_open_jobs" : "20"
+#      },
+#      "indices" : {
+#        "docs" : {
+#          "count" : 12642441017,
+#          "deleted" : 63186440
+#        },
+#        "store" : {
+#          "size_in_bytes" : 5531888174427
+#        },
+#        "indexing" : {
+#          "index_total" : 7134999906,
+#          "index_time_in_millis" : 1776730895,
+#          "index_current" : 2,
+#          "index_failed" : 0,
+#          "delete_total" : 886289422,
+#          "delete_time_in_millis" : 94178697,
+#          "delete_current" : 0,
+#          "noop_update_total" : 0,
+#          "is_throttled" : false,
+#          "throttle_time_in_millis" : 41
+#        },
+#        "get" : {
+#          "total" : 3134,
+#          "time_in_millis" : 1208,
+#          "exists_total" : 3134,
+#          "exists_time_in_millis" : 1208,
+#          "missing_total" : 0,
+#
+#
+#$ ./esl GET '_nodes/_local/stats/http?pretty'
+#{
+#  "_nodes" : {
+#    "total" : 1,
+#    "successful" : 1,
+#    "failed" : 0
+#  },
+#  "cluster_name" : "lab-rdu-es-01",
+#  "nodes" : {
+#    "vudQxvnfSQuxMtdkq8ZTUQ" : {
+#      "timestamp" : 1563811368460,
+#      "name" : "lab-rdu-es-data-01a",
+#      "transport_address" : "192.168.112.141:9300",
+#      "host" : "192.168.112.141",
+#      "ip" : "192.168.112.141:9300",
+#      "roles" : [
+#        "data"
+#      ],
+#      "attributes" : {
+#        "ml.machine_memory" : "134905458688",
+#        "xpack.installed" : "true",
+#        "ml.max_open_jobs" : "20"
+#      },
+#      "http" : {
+#        "current_open" : 110,
+#        "total_opened" : 58796
+#      }
+#    }
+#  }
+#}
