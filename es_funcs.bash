@@ -287,7 +287,7 @@ cancel_relo_shard () {
         }
 	EOM
     )
-    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute?explain' -d "$CANCEL")
+    cmdOutput=$(${escmd[$env]} POST '_cluster/reroute?explain&pretty' -d "$CANCEL")
     echo "${cmdOutput}" | grep -q '"acknowledged":true' && printf '{"acknowledged":true}\n' || echo "${cmdOutput}"
 }
 
@@ -537,13 +537,15 @@ set_idx_num_replicas_to_X () {
     NUMREP=$(cat <<-EOM
         {
          "index": {
-           "number_of_replicas": ${numReps},
-           "auto_expand_replicas": false
+           "number_of_replicas": ${numReps}
+
           }
         }
 	EOM
     )
     ${escmd[$env]} PUT "${idxArg}/_settings?pretty" -d "$NUMREP"
+           #"auto_expand_replicas": "0-1",
+           #"auto_expand_replicas": false,
 }
 
 
@@ -1224,3 +1226,54 @@ estail_forcemerge () {
 #    }
 #  }
 #}
+
+
+#$ show_idx_sizes c | grep -E ".ml-ano|.ml-state|.ml-not|\.watches|.security|\.kibana"
+#.ml-anomalies-shared                5   0  580005659            109
+#.ml-state                           5   0       2382             16
+#.ml-notifications                   1   0     268769              0
+#.kibana_3                           1   1         72              0
+#.kibana_2                           1   1         62              0
+#.watches                            1   0         35              0
+#.security-6                         1   0         23              0
+#.kibana_1                           1   1         11              0
+#.kibana_task_manager                1   1          2              0
+#
+#$ showcfg_idx_cfgs c \* | grep -E '".kibana.*{' -A7
+#  ".kibana_1": {
+#    "settings": {
+#      "index.auto_expand_replicas": "false",
+#      "index.creation_date": "1542345587211",
+#      "index.number_of_replicas": "0",
+#      "index.number_of_shards": "1",
+#      "index.provided_name": ".kibana_1",
+#      "index.uuid": "by-CIg-9SaWOnVode-TEQQ",
+#--
+#  ".kibana_3": {
+#    "settings": {
+#      "index.auto_expand_replicas": "0-1",
+#      "index.creation_date": "1556885317955",
+#      "index.number_of_replicas": "1",
+#      "index.number_of_shards": "1",
+#      "index.provided_name": ".kibana_3",
+#      "index.uuid": "bcQa00vlT82EmCRMEtXJ0g",
+#--
+#  ".kibana_task_manager": {
+#    "settings": {
+#      "index.auto_expand_replicas": "0-1",
+#      "index.creation_date": "1556587884346",
+#      "index.number_of_replicas": "1",
+#      "index.number_of_shards": "1",
+#      "index.provided_name": ".kibana_task_manager",
+#      "index.uuid": "rZeMQ24uT2WRN5V-3nszfg",
+#--
+#  ".kibana_2": {
+#    "settings": {
+#      "index.auto_expand_replicas": "0-1",
+#      "index.creation_date": "1542345586527",
+#      "index.number_of_replicas": "1",
+#      "index.number_of_shards": "1",
+#      "index.provided_name": ".kibana_2",
+#      "index.uuid": "9_YdG4UySASKUOrTJOluaQ",
+#
+#
