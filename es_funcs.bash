@@ -118,9 +118,6 @@ usage_chk6 () {
     local sTime="$4"
     local eTime="$5"
 
-    [[ $env =~ [lpc] && $idxArg != '' ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern>\n\n" \
-        && return 1
     [[ $env =~ [lpc] && $idxArg != '' \
             && $namespace != '' \
             && $sTime != '' \
