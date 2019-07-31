@@ -48,7 +48,7 @@ usage () {
 #   - YYYYYYYY (password)
 #------------------------------------------------
 [ "$4" != "" ] && tmpArg4="$4"
-arg4=$(echo "$tmpArg4" | sed -e "s/XXXXXXXX/$(${usernameCmd})/" -e "s/YYYYYYYY/$(${passwordCmd})/")
+arg4=$(echo "$tmpArg4" | sed -e "s|XXXXXXXX|$(${usernameCmd})|" -e "s|YYYYYYYY|$(${passwordCmd})|")
 
 #------------------------------------------------
 # ...ways to call curl.....
@@ -75,4 +75,10 @@ else
         -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4" "$5"
 fi
 
-
+##### TODO #####
+# the username logic above which uses `sed` to swap out XXXX and YYYY w/ username + password is a tricky bit. We've tested it with passwords like this:
+#
+#    echo 'CH\#(8jCCUr;d*aD{}m2dPZY`_9tLRC.3o5K>;~YW%,[Zw"2+D(FK-jPbdsake2^?#a7;N-Y)+4uZ8)(Qe"b#r!,$!*k#]Xr+4Nv'
+#
+# Bear in mind that `sed` makes use of `|` and so a password that includes this character will likely break things. At some point we should improve the 
+# username + password handling, but for today it can at least deal w/ passwords such as the one above.
