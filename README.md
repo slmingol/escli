@@ -309,6 +309,96 @@ USAGE: list_nodes [l|p|c]
 
 Most of the functions will take a single argument, either `l` or `p` or `c` to denote which cluster you want it to target. A handful of functions can take additional items, such as `relo_shard` & `delete_idx`. Consult their usage for more details.
 
+### WORKFLOWS
+
+#### Deleting docs from an index
+
+```
+del_docs_k8s_ns_range
+
+USAGE: del_docs_k8s_ns_range [l|p|c] <idx pattern> <k8s namespace> <start time> <end time>
+
+
+  * TIME FORMAT: 2019-07-10T00:00:00.000Z
+
+  * INDX FORMAT:
+      -- filebeat-*
+      -- -or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,....
+      -- -or- filebeat-*-2019.07*
+
+
+```
+
+```
+$ del_docs_k8s_ns_range l filebeat-6.5.1-2019.07.31 big-dripper 2019-07-31T13:58:29.145Z 2019-07-31T17:40:00.000Z
+{"task":"vudQxvnfSQuxMtdkq8ZTUQ:2390166372"}
+
+$ del_docs_k8s_ns_range l filebeat-6.5.1-2019.07.31 flex-generator 2019-07-31T13:58:29.145Z 2019-07-31T17:40:00.000Z
+{"task":"vudQxvnfSQuxMtdkq8ZTUQ:2390297564"}
+```
+
+```
+$ estail_deletebyquery l
+estail_deletebyquery
+===================================
+indices:data/write/delete/byquery  transport  43m    lab-rdu-es-data-01a
+indices:data/write/delete/byquery  transport  42.8m  lab-rdu-es-data-01a
+===================================
+estail_deletebyquery
+===================================
+indices:data/write/delete/byquery  transport  43.2m  lab-rdu-es-data-01a
+indices:data/write/delete/byquery  transport  43m    lab-rdu-es-data-01a
+===================================
+estail_deletebyquery
+===================================
+indices:data/write/delete/byquery  transport  43.3m  lab-rdu-es-data-01a
+===================================
+estail_deletebyquery
+===================================
+indices:data/write/delete/byquery  transport  43.5m  lab-rdu-es-data-01a
+===================================
+estail_deletebyquery
+===================================
+done
+```
+
+```
+$ forcemerge_to_expunge_deletes l filebeat-6.5.1-2019.07.31
+...
+... Ctrl-C at any time, it's scheduled
+...
+```
+
+```
+$ estail_forcemerge l
+estail_forcemerge
+===================================
+indices:admin/forcemerge     transport  15.1m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  direct     15.1m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  transport  15.1m  lab-rdu-es-data-01c
+indices:admin/forcemerge[n]  transport  15.1m  lab-rdu-es-data-01b
+===================================
+estail_forcemerge
+===================================
+indices:admin/forcemerge     transport  15.3m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  direct     15.3m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  transport  15.3m  lab-rdu-es-data-01b
+indices:admin/forcemerge[n]  transport  15.3m  lab-rdu-es-data-01c
+===================================
+...
+...
+estail_forcemerge
+===================================
+indices:admin/forcemerge     transport  24.6m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  direct     24.6m  lab-rdu-es-data-01a
+indices:admin/forcemerge[n]  transport  24.6m  lab-rdu-es-data-01b
+indices:admin/forcemerge[n]  transport  24.6m  lab-rdu-es-data-01c
+===================================
+estail_forcemerge
+===================================
+done
+```
+
 ### REFERENCES
 * [Document APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs.html)
 * [Cluster APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster.html)
