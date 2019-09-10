@@ -147,6 +147,7 @@ shorecov_hot_threads
 shorecov_idx_shard_stats
 show_stats_cluster
 show_tasks_stats
+verify_idx_retentions
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
@@ -248,6 +249,7 @@ shorecov_hot_threads              # show hot thread details
 shorecov_idx_shard_stats          # show an index's shard stats
 show_stats_cluster                # shows the _stats for entire cluster
 show_tasks_stats                  # shows the tasks queue
+verify_idx_retentions             # shows the distribution of index retentions (days per index type & version)
 
 #7-----------------------------------------------
 # shard funcs
