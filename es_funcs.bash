@@ -642,6 +642,22 @@ show_tasks_stats () {
     ${escmd[$env]} GET '_cat/tasks?human&pretty&detailed&v'
 }
 
+verify_idx_retentions () {
+    # shows the distribution of index retentions (days per index type & version)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    printf "\nNOTE: Shows how many days worth of logs per index. Some indices have multiple versions per index type.\n"
+
+    for idx in filebeat packetbeat metricbeat messaging; do
+        printf "\n$idx\n==========\n"
+        show_idx_sizes "$env" | grep $idx | cut -d"-" -f2 | sort | uniq -c
+        echo ''
+    done
+    idx=syslog; printf "\n$idx\n==========\n%s\n\n" "$(show_idx_sizes "$env" | grep "$idx" | wc -l)"
+    idx=f5;     printf "\n$idx\n==========\n%s\n\n" "$(show_idx_sizes "$env" | grep "$idx" | cut -d"-" -f2 | wc -l)"
+}
+
 
 
 #7-----------------------------------------------
