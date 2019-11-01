@@ -749,7 +749,7 @@ show_shard_routing_allocation () {
     # show status (cluster.routing.allocation.enable)
     local env="$1"
     usage_chk1 "$env" || return 1
- showcfg_shard_allocations $env | grep cluster.routing.allocation.enable
+    showcfg_shard_allocations $env | grep cluster.routing.allocation.enable
 }
 
 enable_shard_allocations () {
@@ -780,6 +780,21 @@ disable_shard_allocations () {
 	EOM
     )
     ${escmd[$env]} PUT '_cluster/settings' -d "$DISALLOW"
+}
+
+clear_shard_allocations () {
+    # clear the allocator to route shards (cluster.routing.allocation.enable)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    CLEAR=$(cat <<-EOM
+        {
+         "persistent": {
+           "cluster.routing.allocation.enable":    null
+         }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT '_cluster/settings' -d "$CLEAR"
 }
 
 

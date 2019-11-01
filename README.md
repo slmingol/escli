@@ -29,11 +29,19 @@ $ tree -I '*ARCHIVE*|*WIP*' -L 3
 ├── escli.bash
 ├── escli.conf
 ├── escli.conf.sample
+├── escli_c.conf
 ├── escli_c.conf.sample
 ├── esl -> escli.bash
-└── esp -> escli.bash
+├── esp -> escli.bash
+├── upgrade_notes.txt
+├── urls.txt
+├── zencli.bash
+├── zencli.conf
+├── zencli.conf.sample
+├── zsl -> zencli.bash
+└── zsp -> zencli.bash
 
-0 directories, 11 files
+0 directories, 19 files
 ```
 
 ### USAGE
@@ -155,6 +163,7 @@ explain_allocations_hddinfo
 show_shard_routing_allocation
 enable_shard_allocations
 disable_shard_allocations
+clear_shard_allocations
 show_idx_sizes
 show_idx_stats
 delete_idx
@@ -261,6 +270,7 @@ explain_allocations_hddinfo       # show details (aka. explain) cluster allocati
 show_shard_routing_allocation     # show status (cluster.routing.allocation.enable)
 enable_shard_allocations          # allow the allocator to route shards (cluster.routing.allocation.enable)
 disable_shard_allocations         # disallow the allocator to route shards (cluster.routing.allocation.enable)
+clear_shard_allocations           # clear the allocator to route shards (cluster.routing.allocation.enable)
 
 #8-----------------------------------------------
 # index stat funcs
