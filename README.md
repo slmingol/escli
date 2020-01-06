@@ -184,6 +184,7 @@ del_docs_k8s_ns_range
 forcemerge_to_expunge_deletes
 estail_deletebyquery
 estail_forcemerge
+list_templates
 ```
 
 You can also get that list with a short description of each function:
@@ -307,6 +308,11 @@ del_docs_k8s_ns_range             # delete k8s namespace docs over a specific ti
 forcemerge_to_expunge_deletes     # force merge of shards to expunge deleted docs
 estail_deletebyquery              # watch deletebyquery tasks
 estail_forcemerge                 # watch forcemerges in tasks queue
+
+#12----------------------------------------------
+# template funcs
+##-----------------------------------------------
+list_templates                    # show all template details
 
 
 ```

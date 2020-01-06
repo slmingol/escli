@@ -1066,6 +1066,18 @@ estail_forcemerge () {
 
 
 
+#12----------------------------------------------
+# template funcs
+##-----------------------------------------------
+list_templates () {
+    # show all template details
+    local env="$1"
+    usage_chk1 "$env"|| return 1
+    ${escmd["$env"]} GET '_cat/templates?pretty&v&s=name'
+}
+
+
+
 # PUT /_security/role_mapping/bw_elasticsearch_ro
 # {
 #   "roles": [ "bw_elasticsearch_ro"],
@@ -1305,3 +1317,11 @@ estail_forcemerge () {
 #      "index.uuid": "9_YdG4UySASKUOrTJOluaQ",
 #
 #
+
+### Show index sources (unique)
+# ./esl GET 'filebeat-6.5.1-2019.12.31/_search?pretty' | jq -r '.hits.hits[]._source.host.name' | sort -u
+# es-data-01e.lab1.bwnet.us
+# es-data-01f.lab1.bwnet.us
+
+
+
