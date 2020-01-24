@@ -417,6 +417,21 @@ estail_forcemerge
 done
 ```
 
+### OTHER USES
+#### Loading a template
+```
+$ ./esp PUT '_template/metrics-template' -d "$(cat metrics.template.json)" | jq .
+```
+
+### Dumping all the templates to files
+```
+$ escli=~/projects/escli/esp
+$ tmplList="$(${escli} GET '_cat/templates' | awk '/^[mfp].*beat|f5|syslog|messaging/ {print $1}')"
+$ for i in $tmplList; do
+    ${escli} GET "_template/${i}?pretty" > ${i}.tmp
+done
+```
+
 ### REFERENCES
 * [Document APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs.html)
 * [Cluster APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster.html)
