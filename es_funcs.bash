@@ -1324,4 +1324,25 @@ list_templates () {
 # es-data-01f.lab1.bwnet.us
 
 
-
+### Show what the analyzer thinks of a string of text
+### NOTE: It's showing that the string is viewed as 2 tokens "akrzos" and "crashloop"
+#
+# $ ./esl POST '_analyze?pretty' -d '{"analyzer":"standard","text":"akrzos-crashloop"}'
+# {
+#   "tokens" : [
+#     {
+#       "token" : "akrzos",
+#       "start_offset" : 0,
+#       "end_offset" : 6,
+#       "type" : "<ALPHANUM>",
+#       "position" : 0
+#     },
+#     {
+#       "token" : "crashloop",
+#       "start_offset" : 7,
+#       "end_offset" : 16,
+#       "type" : "<ALPHANUM>",
+#       "position" : 1
+#     }
+#   ]
+# }
