@@ -649,9 +649,16 @@ verify_idx_retentions () {
 
     printf "\nNOTE: Shows how many days worth of logs per index. Some indices have multiple versions per index type.\n"
 
-    for idx in filebeat packetbeat metricbeat messaging; do
+    for idx in filebeat packetbeat metricbeat messaging test; do
         printf "\n$idx\n==========\n"
-        show_idx_sizes "$env" | grep $idx | cut -d"-" -f2 | sort | uniq -c
+        idxDetails=$(show_idx_sizes "$env")
+        now=$(date +%Y%m%d)
+        futureIdxCnt=$(echo "$idxDetails" | grep ^$idx \
+            | cut -d" " -f1 | cut -d- -f3 | sed 's/\.//g' \
+            | awk -v DATE="$now" '$1 > DATE' | wc -l | awk '{print $1}')
+        echo "$idxDetails" | grep ^$idx | cut -d"-" -f2 | sort | uniq -c
+        echo ''
+        [[ $futureIdxCnt = 0 ]] || echo "Indexes dated in future: $futureIdxCnt"
         echo ''
     done
     idx=syslog; printf "\n$idx\n==========\n%s\n\n" "$(show_idx_sizes "$env" | grep "$idx" | wc -l)"
