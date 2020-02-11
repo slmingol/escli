@@ -649,7 +649,7 @@ verify_idx_retentions () {
 
     printf "\nNOTE: Shows how many days worth of logs per index. Some indices have multiple versions per index type.\n"
 
-    for idx in filebeat packetbeat metricbeat messaging test; do
+    for idx in filebeat packetbeat metricbeat heartbeat messaging test; do
         printf "\n$idx\n==========\n"
         idxDetails=$(show_idx_sizes "$env")
         now=$(date +%Y%m%d)
@@ -661,8 +661,10 @@ verify_idx_retentions () {
         [[ $futureIdxCnt = 0 ]] || echo "Indexes dated in future: $futureIdxCnt"
         echo ''
     done
-    idx=syslog; printf "\n$idx\n==========\n%s\n\n" "$(show_idx_sizes "$env" | grep "$idx" | wc -l)"
-    idx=f5;     printf "\n$idx\n==========\n%s\n\n" "$(show_idx_sizes "$env" | grep "$idx" | cut -d"-" -f2 | wc -l)"
+    idx=syslog; printf "\n$idx\n==========\n%s\n\n\n" "$(show_idx_sizes "$env" | grep "$idx" | wc -l)"
+    idx=f5;     printf "\n$idx\n==========\n%s\n\n\n" "$(show_idx_sizes "$env" | grep "$idx" | cut -d"-" -f2 | wc -l)"
+
+    printf 'NOTE: To see more detailed view, use show_idx_sizes <l|p|c> | grep "<filebeat|metricbeat|...>"\n\n\n\n'
 }
 
 
