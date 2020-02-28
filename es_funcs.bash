@@ -1355,3 +1355,13 @@ list_templates () {
 #     }
 #   ]
 # }
+
+### Show number of shards in use by data node
+# $ show_shards l | awk '{print $8}' | grep -v node | sort | uniq -c
+#  454 lab-rdu-es-data-01a
+#  454 lab-rdu-es-data-01b
+#  454 lab-rdu-es-data-01c
+#  455 lab-rdu-es-data-01d
+#  455 lab-rdu-es-data-01e
+#  454 lab-rdu-es-data-01f
+#  454 lab-rdu-es-data-01g
