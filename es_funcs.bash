@@ -238,6 +238,30 @@ show_small_shards () {
     show_shards "$env" | grep -E "index|${node}" | tail -40
 }
 
+show_shard_usage_by_node () {
+    # list all the index shards sorted by size (big->small)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    cat <<-EOM
+
+
+	A good rule-of-thumb is to ensure you keep the number of shards per node below 20 per GB heap it 
+	has configured. A node with a 30GB heap should therefore have a maximum of 600 shards, but the 
+	further below this limit you can keep it the better. This will generally help the cluster 
+	stay in good health.
+	
+	Source: https://www.elastic.co/blog/how-many-shards-should-i-have-in-my-elasticsearch-cluster
+
+
+	EOM
+    (
+    echo "node #shards"
+    echo "---- -------"
+    show_shards "$env" | awk '{print $8}' | grep -v node | sort | uniq -c | awk '{print $2, $1}'
+    ) | column -t 
+    echo ""
+}
+
 relo_shard () {
     # move an indices' shard from node suffix X to node suffix Y
     local env="$1"
