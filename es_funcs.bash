@@ -364,6 +364,22 @@ increase_balance_throttle () {
     showcfg_cluster "$env" | jq .persistent
 }
 
+increase_balance_throttle_500mb () {
+    # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    THROTTLEINC=$(cat <<-EOM
+        {
+            "persistent": {
+                "indices.recovery.max_bytes_per_sec" : "500mb"
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
+    showcfg_cluster "$env" | jq .persistent
+}
+
 reset_balance_throttle () {
     # reset routing allocations for balancing & recoveries (throttle default)
     local env="$1"

@@ -130,6 +130,7 @@ cancel_relo_shards_all
 retry_unassigned_shards
 show_balance_throttle
 increase_balance_throttle
+increase_balance_throttle_500mb
 reset_balance_throttle
 change_allocation_threshold
 show_recovery
@@ -228,6 +229,7 @@ retry_unassigned_shards           # reallocate all unassignable shards (elapsed 
 ##-----------------------------------------------
 show_balance_throttle             # show routing allocations for balancing & recoveries (current)
 increase_balance_throttle         # increase routing allocations for balancing & recoveries (throttle open)
+increase_balance_throttle_500mb   # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
 reset_balance_throttle            # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold       # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
