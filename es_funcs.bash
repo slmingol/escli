@@ -46,7 +46,7 @@ escli_lsl () {
             grep --color=never -A2 "^${line}" "${filename}"
         else
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
-                paste - - | pr -t -e30
+                paste - - | pr -t -e32
         fi
     done < <(awk '/^[0-9a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
