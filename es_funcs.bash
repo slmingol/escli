@@ -940,7 +940,7 @@ exclude_node_name () {
 clear_excluded_nodes () {
     # clear any excluded cluster nodes
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
 
     EXCLUDENAME=$(cat <<-EOM
         {
@@ -962,42 +962,42 @@ clear_excluded_nodes () {
 eswhoami () {
     # show auth info about who am i
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET '_xpack/security/_authenticate?pretty'
 }
 
 showcfg_auth_roles () {
     # show auth info about roles
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET '_xpack/security/role?pretty'
 }
 
 showcfg_auth_rolemappings () {
     # show auth info about role mappings
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET '_xpack/security/role_mapping?pretty'
 }
 
 list_auth_roles () {
     # list all roles
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET "_xpack/security/role?pretty" | jq 'to_entries[] | .key' | sed "s/\"//g" | sort
 }
 
 list_auth_rolemappings () {
     # list all rolemappings
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET "_xpack/security/role_mapping?pretty" | jq 'to_entries[] | .key' | sed "s/\"//g" | sort
 }
 
 evict_auth_cred_cache () {
     # evict/clear users from the user cache
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} POST '_xpack/security/realm/ldap1/_clear_cache?pretty'
     # https://www.elastic.co/guide/en/elasticsearch/reference/6.5/security-api-clear-cache.html
 }
@@ -1005,7 +1005,7 @@ evict_auth_cred_cache () {
 create_bearer_token () {
     # create bearer token for user
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     CREDS=$(cat <<-EOM
         {
          "grant_type": "password",
@@ -1076,7 +1076,7 @@ forcemerge_to_expunge_deletes () {
 estail_deletebyquery () {
     # watch deletebyquery tasks
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     clear && cnt=0
     while [ 1 ]; do
         cnt=$((cnt+1))
@@ -1096,7 +1096,7 @@ estail_deletebyquery () {
 estail_forcemerge () {
     # watch forcemerges in tasks queue
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     clear && cnt=0
     while [ 1 ]; do
         cnt=$((cnt+1))
@@ -1121,8 +1121,19 @@ estail_forcemerge () {
 list_templates () {
     # show all template details
     local env="$1"
-    usage_chk1 "$env"|| return 1
+    usage_chk1 "$env" || return 1
     ${escmd["$env"]} GET '_cat/templates?pretty&v&s=name'
+}
+
+show_template () {
+    # show template X's details
+    local env="$1"
+    local idxArg="$2"
+    if ! usage_chk3 "$env" "$idxArg"; then
+        printf "\nExamples\n========\nshow_template l filebeat-6.5.1 | grep settings -A15\n\n\n"
+        return 1
+    fi
+    ${escmd["$env"]} GET "_template/${idxArg}*?pretty"
 }
 
 
@@ -1405,3 +1416,53 @@ list_templates () {
 #  455 lab-rdu-es-data-01e
 #  454 lab-rdu-es-data-01f
 #  454 lab-rdu-es-data-01g
+
+### Show thread_pool stats on each node
+# $ ./esc GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' | head
+# node_name           name                active rejected completed
+# instance-0000000058 analyze                  0        0         0
+# instance-0000000058 fetch_shard_started      0        0         0
+# instance-0000000058 fetch_shard_store        0        0        31
+# instance-0000000058 flush                    0        0    211732
+# instance-0000000058 force_merge              0        0         0
+# instance-0000000058 generic                  1        0   3534840
+# instance-0000000058 get                      0        0      2450
+# instance-0000000058 listener                 0        0      5893
+# instance-0000000058 management               1        0   6725733
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-thread-pool.html
+
+### Show hot threads by node
+# $ ./esp GET '_nodes/hot_threads' | head -30
+# ::: {rdu-es-data-01r}{_NE3oAPUT2amqt2n7drkCg}{Cpr4txJoQBGTzRTjDi7sYQ}{192.168.138.50}{192.168.138.50:9300}{dl}{ml.machine_memory=134454972416, ml.max_open_jobs=20, xpack.installed=true}
+#    Hot threads at 2020-05-07T01:21:44.462Z, interval=500ms, busiestThreads=3, ignoreIdleThreads=true:
+# 
+#    76.3% (381.4ms out of 500ms) cpu usage by thread 'elasticsearch[rdu-es-data-01r][[messaging-6.5.1-2020.05.07][3]: Lucene Merge Thread #1115]'
+#      5/10 snapshots sharing following 11 elements
+#        app//org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter$TermsWriter.write(BlockTreeTermsWriter.java:865)
+#        app//org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter.write(BlockTreeTermsWriter.java:344)
+#        app//org.apache.lucene.codecs.FieldsConsumer.merge(FieldsConsumer.java:105)
+#        app//org.apache.lucene.codecs.perfield.PerFieldPostingsFormat$FieldsWriter.merge(PerFieldPostingsFormat.java:197)
+#        app//org.apache.lucene.index.SegmentMerger.mergeTerms(SegmentMerger.java:245)
+#        app//org.apache.lucene.index.SegmentMerger.merge(SegmentMerger.java:140)
+#        app//org.apache.lucene.index.IndexWriter.mergeMiddle(IndexWriter.java:4463)
+#        app//org.apache.lucene.index.IndexWriter.merge(IndexWriter.java:4057)
+#        app//org.apache.lucene.index.ConcurrentMergeScheduler.doMerge(ConcurrentMergeScheduler.java:625)
+#        app//org.elasticsearch.index.engine.ElasticsearchConcurrentMergeScheduler.doMerge(ElasticsearchConcurrentMergeScheduler.java:101)
+#        app//org.apache.lucene.index.ConcurrentMergeScheduler$MergeThread.run(ConcurrentMergeScheduler.java:662)
+#      5/10 snapshots sharing following 9 elements
+#        app//org.apache.lucene.codecs.FieldsConsumer.merge(FieldsConsumer.java:105)
+#        app//org.apache.lucene.codecs.perfield.PerFieldPostingsFormat$FieldsWriter.merge(PerFieldPostingsFormat.java:197)
+#        app//org.apache.lucene.index.SegmentMerger.mergeTerms(SegmentMerger.java:245)
+#        app//org.apache.lucene.index.SegmentMerger.merge(SegmentMerger.java:140)
+#        app//org.apache.lucene.index.IndexWriter.mergeMiddle(IndexWriter.java:4463)
+#        app//org.apache.lucene.index.IndexWriter.merge(IndexWriter.java:4057)
+#        app//org.apache.lucene.index.ConcurrentMergeScheduler.doMerge(ConcurrentMergeScheduler.java:625)
+#        app//org.elasticsearch.index.engine.ElasticsearchConcurrentMergeScheduler.doMerge(ElasticsearchConcurrentMergeScheduler.java:101)
+#        app//org.apache.lucene.index.ConcurrentMergeScheduler$MergeThread.run(ConcurrentMergeScheduler.java:662)
+# 
+#     5.9% (29.4ms out of 500ms) cpu usage by thread 'elasticsearch[rdu-es-data-01r][write][T#39]'
+#      2/10 snapshots sharing following 2 elements
+#        java.base@13.0.2/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-hot-threads.html
