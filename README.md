@@ -160,6 +160,8 @@ show_stats_cluster
 show_tasks_stats
 verify_idx_retentions
 show_idx_retention_violations
+show_idx_doc_sources
+show_idx_doc_sources_cnts
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
@@ -272,7 +274,9 @@ shorecov_idx_shard_stats            # show an index's shard stats
 show_stats_cluster                  # shows the _stats for entire cluster
 show_tasks_stats                    # shows the tasks queue
 verify_idx_retentions               # shows the distribution of index retentions (days per index type & version)
-show_idx_retention_violations       local env="$1"
+show_idx_retention_violations       # shows the indexes which fall outside a given retention window (days)
+show_idx_doc_sources                # show the hostnames that sent documents to an index
+show_idx_doc_sources_cnts           # show the total num. docs each hostname sent to an index
 
 #8-----------------------------------------------
 # shard funcs

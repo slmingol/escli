@@ -734,6 +734,7 @@ verify_idx_retentions () {
 }
 
 show_idx_retention_violations () {
+    # shows the indexes which fall outside a given retention window (days)
     local env="$1"
     local idxArg="$2"
     local daysToRetain="$3"
@@ -757,6 +758,46 @@ show_idx_retention_violations () {
     done
 }
 
+show_idx_doc_sources () {
+    # show the hostnames that sent documents to an index
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    totalCnt=$(${escmd[$env]} GET ${idxArg}'/_count' | jq '.count')
+
+    printf "\n\n"
+    printf "Document sources (1st 10)\n"
+    printf "=========================\n"
+    printf "Total Docs: [%s]\n" "$totalCnt"
+    printf "=========================\n\n"
+
+    ${escmd[$env]} GET ${idxArg}'/_search' | jq '. | .hits.hits[] | [._index, ._source.host.name, ._source."@timestamp"]' \
+        | paste - - - - -  | column -t
+    printf "\n\n"
+}
+
+show_idx_doc_sources_cnts () {
+    # show the total num. docs each hostname sent to an index
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    printf "\n\n"
+    printf "Document sources (counts)\n"
+    printf "=========================\n\n"
+
+    ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
+        '{
+          "size": 0,
+          "aggs": {
+            "hosts": {
+                "terms" : { "field": "host.name",  "size": 500 }
+            }
+          }
+        }' | jq '.aggregations.hosts.buckets | .[]' | paste - - - -  | column -t
+    printf "\n\n"
+}
 
 #8-----------------------------------------------
 # shard funcs
