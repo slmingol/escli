@@ -692,7 +692,7 @@ verify_idx_retentions () {
     for idx in filebeat packetbeat metricbeat heartbeat messaging test; do
         printf "\n$idx\n==========\n"
         idxDetails=$(show_idx_sizes "$env")
-        now=$(date +%Y%m%d)
+        now=$(date -u +%Y%m%d)
         futureIdxCnt=$(echo "$idxDetails" | grep ^$idx \
             | cut -d" " -f1 | cut -d- -f3 | sed 's/\.//g' \
             | awk -v DATE="$now" '$1 > DATE' | wc -l | awk '{print $1}')
