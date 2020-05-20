@@ -62,7 +62,7 @@ escli_lsl () {
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
                 paste - - | pr -t -e32
         fi
-    done < <(awk '/^[0-9a-z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
+    done < <(awk '/^[0-9a-zA-Z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
 }
 
@@ -163,12 +163,24 @@ usage_chk8 () {
     # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
     local env="$1"
     local idxArg="$2"
-    local repNum="$3"
+    local retNum="$3"
 
-    [[ $env =~ [lpc] && $idxArg != '' && ( $repNum =~ ^[0-9]{1,2}$ ) ]] && return 0 || \
+    [[ $env =~ [lpc] && $idxArg != '' && ( $retNum =~ ^[0-9]{1,2}$ ) ]] && return 0 || \
         printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx base type> <days to retain>\n\n" \
         && printf "  * idx base type:  [filebeat|metricbeat|packetbeat|etc.]\n" \
         && printf "  * days to retain: [30|60|90|etc.]\n\n\n" \
+        && return 1
+}
+
+usage_chk9 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer)
+    local env="$1"
+    local size="$2"
+
+    [[ $env =~ [lpc] && ( $size =~ ^[0-9]{2,4}$ && $size -gt 39 && $size -lt 2001 ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <size in megabytes>\n\n" \
+        && printf "  * size in megabytes: [40|100|250|500|2000|etc.]\n\n" \
+        && printf "  NOTE: ...minimum is 40, the max. 2000!...\n\n\n" \
         && return 1
 }
 
@@ -390,14 +402,17 @@ increase_balance_throttle () {
     showcfg_cluster "$env" | jq .persistent
 }
 
-increase_balance_throttle_500mb () {
+increase_balance_throttle_XXXmb () {
     # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
     local env="$1"
-    usage_chk1 "$env" || return 1
+    local size="$2"
+    usage_chk9 "$env" "$size" || return 1
+    printf "\n\n"
+    printf "NOTE: The default 'indices.recovery.max_bytes_per_sec' == 40mb, to reset to defaults use 'reset_balance_throttle'\n\n"
     THROTTLEINC=$(cat <<-EOM
         {
             "persistent": {
-                "indices.recovery.max_bytes_per_sec" : "500mb"
+                "indices.recovery.max_bytes_per_sec" : "${size}mb"
             }
         }
 	EOM

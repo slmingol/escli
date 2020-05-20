@@ -131,7 +131,7 @@ cancel_relo_shards_all
 retry_unassigned_shards
 show_balance_throttle
 increase_balance_throttle
-increase_balance_throttle_500mb
+increase_balance_throttle_XXXmb
 reset_balance_throttle
 change_allocation_threshold
 show_recovery
@@ -239,7 +239,7 @@ retry_unassigned_shards             # reallocate all unassignable shards (elapse
 ##-----------------------------------------------
 show_balance_throttle               # show routing allocations for balancing & recoveries (current)
 increase_balance_throttle           # increase routing allocations for balancing & recoveries (throttle open)
-increase_balance_throttle_500mb     # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
+increase_balance_throttle_XXXmb     # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
 reset_balance_throttle              # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold         # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
@@ -256,6 +256,7 @@ show_readonly_idxs                  # show read_only_allow_delete setting which 
 show_readonly_idxs_full             # show read_only_allow_delete setting for all indices
 set_idx_default_field               # set index.query.default_field => [ "*" ]
 set_tmplate_default_field           # set template index.query.default_field => [ "*" ]
+set_idx_num_replicas_to_X           # set an index's number_of_replicas to X
 
 #7-----------------------------------------------
 # health/stat funcs
