@@ -29,8 +29,22 @@ filename="es_funcs.bash"
 ### Functions 
 #################################################
 
-
 #0-----------------------------------------------
+# helper funcs
+##-----------------------------------------------
+calc_date () {
+    # print UTC date X "days | days ago"
+    local english_days="$1"
+
+    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
+    [[ $english_days != *days* ]] && \
+        printf "\nUSAGE: ${FUNCNAME[1]} [X days ago | X days]\n\n" && return 1
+
+    ${dateCmd} -u --date="$english_days" +%Y.%m.%d
+}
+
+
+#1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
 escli_ls () {
@@ -131,7 +145,7 @@ usage_chk6 () {
                     "filebeat-*" \
                     "-or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,...." \
                     "-or- filebeat-*-2019.07*" \
-       && return 1
+        && return 1
 }
 
 usage_chk7 () {
@@ -145,9 +159,21 @@ usage_chk7 () {
         && return 1
 }
 
+usage_chk8 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
+    local env="$1"
+    local idxArg="$2"
+    local repNum="$3"
+
+    [[ $env =~ [lpc] && $idxArg != '' && ( $repNum =~ ^[0-9]{1,2}$ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx base type> <days to retain>\n\n" \
+        && printf "  * idx base type:  [filebeat|metricbeat|packetbeat|etc.]\n" \
+        && printf "  * days to retain: [30|60|90|etc.]\n\n\n" \
+        && return 1
+}
 
 
-#1-----------------------------------------------
+#2-----------------------------------------------
 # help funcs
 ##-----------------------------------------------
 help_cat () {
@@ -166,7 +192,7 @@ help_indices () {
 
 
 
-#2-----------------------------------------------
+#3-----------------------------------------------
 # node funcs
 ##-----------------------------------------------
 list_nodes () {
@@ -212,7 +238,7 @@ list_nodes_zenoss_alarms () {
     printf "\n\n"
 }
 
-#3-----------------------------------------------
+#4-----------------------------------------------
 # shard mgmt funcs
 ##-----------------------------------------------
 show_shards () {
@@ -333,7 +359,7 @@ retry_unassigned_shards () {
     echo "${cmdOutput}" | less
 }
 
-#4-----------------------------------------------
+#5-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle () {
@@ -419,7 +445,7 @@ change_allocation_threshold () {
 
 
 
-#5-----------------------------------------------
+#6-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery () {
@@ -587,7 +613,7 @@ set_idx_num_replicas_to_X () {
 
 
 
-#6-----------------------------------------------
+#7-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop () {
@@ -707,9 +733,32 @@ verify_idx_retentions () {
     printf 'NOTE: To see more detailed view, use show_idx_sizes <l|p|c> | grep "<filebeat|metricbeat|...>"\n\n\n\n'
 }
 
+show_idx_retention_violations () {
+    local env="$1"
+    local idxArg="$2"
+    local daysToRetain="$3"
+    usage_chk8 "$env" "$idxArg" "$daysToRetain" || return 1
+
+    indexes=$(show_idx_sizes "$env" | grep ^"$idxArg" | sort)
+
+    olderThanDate=$(calc_date "${daysToRetain} days ago")
+    newerThanDate=$(calc_date "0 days")
+
+    for idxSubType in $(echo "$indexes" | awk '{print $1}' | cut -d"-" -f2 | sort -u); do
+        printf "\n\n"
+        printf "Indices outside %s day(s) retention window\n" "$daysToRetain"
+        printf "==========================================\n"
+        printf "Index Sub-Type: [%s]\n" "${idxSubType}"
+        printf "==========================================\n\n"
+        for idx in $(echo "$indexes" | grep -oE "${idxArg}-${idxSubType}-\d+.\d+.\d+"); do 
+            [[ "${idx}" < "${idxArg}-${idxSubType}-${olderThanDate}" ]] && echo "${idx}"
+            [[ "${idx}" > "${idxArg}-${idxSubType}-${newerThanDate}" ]] && echo "${idx}"
+        done
+    done
+}
 
 
-#7-----------------------------------------------
+#8-----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx () {
@@ -848,7 +897,7 @@ clear_shard_allocations () {
 
 
 
-#8-----------------------------------------------
+#9-----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes () {
@@ -905,7 +954,7 @@ show_idx_version_cnts () {
 
 
 
-#9-----------------------------------------------
+#10----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes () {
@@ -956,7 +1005,7 @@ clear_excluded_nodes () {
 
 
 
-#10----------------------------------------------
+#11----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -1019,7 +1068,7 @@ create_bearer_token () {
 
 
 
-#11----------------------------------------------
+#12----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range () {
@@ -1115,7 +1164,7 @@ estail_forcemerge () {
 
 
 
-#12----------------------------------------------
+#13----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {
