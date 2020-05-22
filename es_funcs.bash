@@ -24,6 +24,11 @@ filename="es_funcs.bash"
 # watch -x bash -c ". es_funcs.bash; show_recovery p"
 
 
+#################################################
+### Globals
+#################################################
+# sed
+[ "$(uname)" == 'Darwin' ] && sedCmd=gsed || sedCmd=sed
 
 #################################################
 ### Functions 
@@ -248,6 +253,75 @@ list_nodes_zenoss_alarms () {
         done
     ) | sort -k1,1
     printf "\n\n"
+}
+
+show_nodes_fs_details () {
+    # list ES nodes filesystem details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_nodes/stats/fs?human&pretty' | jq -C . | less -r
+}
+
+show_nodes_circuit-breaker_summary () {
+    # list ES nodes circuit breaker tripped summaries
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\nnode circuit breakers tripped counts"
+    printf "\n---------------------------------------------------\n"
+    ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' \
+        | jq -s 'map({ (.nodes[].name): .nodes[].breakers }) | add'  \
+        | grep -E "lab-|: {|tripped" \
+        | paste - - - - - - - - - - - \
+        | $sedCmd -e 's/{[ \t]\+/ /g' -e 's/"tripped"://g' -e 's/"//g' \
+        | column -t \
+        | sort
+    printf "\n--------- end of check ----------------------------\n\n"
+    cat <<-EOM
+
+    Circuit Breakers
+    ----------------
+    Elasticsearch contains multiple circuit breakers used to prevent operations from causing an OutOfMemoryError. 
+    Each breaker specifies a limit for how much memory it can use. Additionally, there is a parent-level breaker 
+    that specifies the total amount of memory that can be used across all breakers.
+    -------------------------------------------------------------------------------------------------------------
+      * request
+                request circuit breaker allows Elasticsearch to prevent per-request data structures 
+                (for example, memory used for calculating aggregations during a request) from exceeding 
+                a certain amount of memory.
+    -------------------------------------------------------------------------------------------------------------
+      * fileddata
+                field data circuit breaker allows Elasticsearch to estimate the amount of memory a field 
+                will require to be loaded into memory.
+    -------------------------------------------------------------------------------------------------------------
+      * in_flight_requests 
+                in flight requests circuit breaker allows Elasticsearch to limit the memory usage of all 
+                currently active incoming requests on transport or HTTP level from exceeding a certain 
+                amount of memory on a node. The memory usage is based on the content length of the request 
+                itself. This circuit breaker also considers that memory is not only needed for 
+                representing the raw request but also as a structured object which is reflected by default 
+                overhead.
+    -------------------------------------------------------------------------------------------------------------
+      * accounting
+                accounting circuit breaker allows Elasticsearch to limit the memory usage of things held 
+                in memory that are not released when a request is completed. This includes things like 
+                the Lucene segment memory.
+    -------------------------------------------------------------------------------------------------------------
+      * parent
+                there is a parent-level breaker that specifies the total amount of memory that can be used 
+                across all breakers
+    -------------------------------------------------------------------------------------------------------------
+
+    Source: https://www.elastic.co/guide/en/elasticsearch/reference/current/circuit-breaker.html
+
+
+	EOM
+}
+
+show_nodes_circuit-breaker_details () {
+    # list ES nodes circuit breaker details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' | jq . -C | less -r
 }
 
 #4-----------------------------------------------
@@ -481,7 +555,7 @@ show_recovery_full () {
 
 
 enable_readonly_idx_pattern () {
-    # set read_only_allow_delete flag for set of indices
+    # set index read_only flag for pattern of indices
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
@@ -489,7 +563,7 @@ enable_readonly_idx_pattern () {
         {
          "index": {
            "blocks": {
-             "read_only_allow_delete": "true"
+             "read_only": "true"
             }
           }
         }
@@ -499,7 +573,7 @@ enable_readonly_idx_pattern () {
 }
 
 disable_readonly_idx_pattern () {
-    # disable read_only_allow_delete flag for set of indices
+    # clear index read_only flag for pattern of indices
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
@@ -507,7 +581,7 @@ disable_readonly_idx_pattern () {
         {
          "index": {
            "blocks": {
-             "read_only_allow_delete": "false"
+             "read_only": null
             }
           }
         }
@@ -517,14 +591,14 @@ disable_readonly_idx_pattern () {
 }
 
 enable_readonly_idxs () {
-    # set read_only_allow_delete flag
+    # set index read_only flag
     local env="$1"
     usage_chk1 "$env" || return 1
     DISALLOWDEL=$(cat <<-EOM
         {
          "index": {
            "blocks": {
-             "read_only_allow_delete": "true"
+             "read_only": "true"
             }
           }
         }
@@ -534,14 +608,14 @@ enable_readonly_idxs () {
 }
 
 disable_readonly_idxs () {
-    # clear read_only_allow_delete flag
+    # clear index read_only flag
     local env="$1"
     usage_chk1 "$env" || return 1
     ALLOWDEL=$(cat <<-EOM
         {
          "index": {
            "blocks": {
-             "read_only_allow_delete": "false"
+             "read_only": null
             }
           }
         }
@@ -551,23 +625,42 @@ disable_readonly_idxs () {
 }
 
 show_readonly_idxs () {
-    # show read_only_allow_delete setting which are enabled (true)
+    # show indexes' read_only setting which are enabled (true)
     local env="$1"
     usage_chk1 "$env" || return 1
-    printf "\nindices with read_only_allow_delete flag set (true)"
+    printf "\nindices with read_only flag set (true)"
     printf "\n---------------------------------------------------\n"
     show_readonly_idxs_full "$env" | grep -v false
     printf "\n--------- end of check ----------------------------\n\n"
 }
 
 show_readonly_idxs_full () {
-    # show read_only_allow_delete setting for all indices
+    # show indexes' read_only setting for all indices
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET \
-        '_all/_settings?pretty&filter_path=*.*.*.*.read_only_allow_delete' | \
-        paste - - - - - - - - - | \
-        column -t |  grep -v '}   }' | sort
+    ${escmd[$env]} GET '_all/_settings?pretty&include_defaults&filter_path=*.*.*.*.read_only' \
+        | grep -Ev '^{|^}' \
+        | paste - - - - - - - - - \
+        | $sedCmd -e 's/: {[ \t]\+/:{ /g' -e 's/[ \t]\+}/ }/g' \
+        | column -t \
+        | sort
+}
+
+clear_readonlyallowdel_idxs () {
+    # clear read_only_allow_delete flag
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ALLOWDEL=$(cat <<-EOM
+        {
+         "index": {
+           "blocks": {
+             "read_only_allow_delete": null
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT '_all/_settings' -d "$ALLOWDEL"
 }
 
 set_idx_default_field () {
@@ -773,7 +866,7 @@ show_idx_retention_violations () {
     done
 }
 
-show_idx_doc_sources () {
+show_idx_doc_sources_1st_10k () {
     # show the hostnames that sent documents to an index
     local env="$1"
     local idxArg="$2"
@@ -787,12 +880,15 @@ show_idx_doc_sources () {
     printf "Total Docs: [%s]\n" "$totalCnt"
     printf "=========================\n\n"
 
-    ${escmd[$env]} GET ${idxArg}'/_search' | jq '. | .hits.hits[] | [._index, ._source.host.name, ._source."@timestamp"]' \
+    ${escmd[$env]} GET ${idxArg}'/_search?size=10000' | jq '. | .hits.hits[] | [._index, ._source.host.name, ._source."@timestamp"]' \
         | paste - - - - -  | column -t
     printf "\n\n"
 }
 
-show_idx_doc_sources_cnts () {
+#show_idx_doc_sources_all_cnts l filebeat-6.5.1-2020.05.22 | grep -vE "ocp|es-da" | head -30
+#show_idx_doc_sources_all_cnts l filebeat-6.5.1-2020.05.22 | grep -E "ocp" | head -30
+
+show_idx_doc_sources_all_cnts () {
     # show the total num. docs each hostname sent to an index
     local env="$1"
     local idxArg="$2"
@@ -813,6 +909,72 @@ show_idx_doc_sources_cnts () {
         }' | jq '.aggregations.hosts.buckets | .[]' | paste - - - -  | column -t
     printf "\n\n"
 }
+
+show_idx_doc_sources_all_k8sns_cnts () {
+    # show the total num. docs each namespace sent to an index
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    printf "\n\n"
+    printf "k8s document sources (counts)\n"
+    printf "=============================\n\n"
+
+#    ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
+#        '{
+#          "size": 0,
+#          "aggs": {
+#            "k8sns": {
+#                "terms" : { "field": "kubernetes.namespace",  "size": 500 }
+#            }
+#          }
+#        }' | jq '.aggregations.k8sns.buckets | .[]' | paste - - - -  | column -t
+
+#    ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
+#        '{
+#          "size": 0,
+#          "aggs" : {
+#            "sales_over_time" : {
+#                "date_histogram" : {
+#                    "field" : "kubernetes.namespace",
+#                    "calendar_interval" : "1d"
+#                }
+#            }
+#          } 
+#        }' #| jq '.aggregations.k8sns.buckets | .[]' #| paste - - - -  | column -t
+
+    #${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
+    ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
+		'{
+		  "size": 0,
+		  "query" : {
+		    "range": {
+		      "@timestamp": {
+		        "gte": "now-1d/d"
+		      }
+		    }
+		  },
+		  "aggs": {
+		    "k8sns": {
+		        "terms" : { "field": "kubernetes.namespace",  "size": 100 },
+		        "aggs": {
+		          "daily_buckets": {
+		            "date_histogram": {
+		              "field": "@timestamp",
+		              "calendar_interval": "day"
+		            }
+		          }
+		        }
+		    }
+		  }
+        }' \
+        | jq '.aggregations.k8sns.buckets[] | .key, .daily_buckets.buckets[].key_as_string, .daily_buckets.buckets[].doc_count' \
+        | paste - - -  \
+        | column -t
+    printf "\n\n"
+}
+
+
 
 #8-----------------------------------------------
 # shard funcs
@@ -1243,6 +1405,13 @@ show_template () {
 
 
 
+###############################################################################
+###############################################################################
+
+#------------------------------------------------
+# TODO NOTES
+##-----------------------------------------------
+
 # PUT /_security/role_mapping/bw_elasticsearch_ro
 # {
 #   "roles": [ "bw_elasticsearch_ro"],
@@ -1324,6 +1493,8 @@ show_template () {
 #     "resource.reload.interval.high" : "5s",
 # 
 
+###############################################################################
+
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html
 #
 # ./esl GET '_nodes?pretty' | less
@@ -1331,11 +1502,15 @@ show_template () {
 # ./esl GET '_nodes/stats/indices?pretty' | less
 # ./esl GET 'filebeat-6.5.1-2019.06.03/_recovery?pretty' | less 
 
+###############################################################################
+
 # translogs and recovery
 # - https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-translog.html
 # - https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-recovery.html
 # - https://www.elastic.co/guide/en/elasticsearch/guide/current/translog.html
 
+
+###############################################################################
 
 ### collect logs
 # $ for node in es-master-01{a..c} es-data-01{a..c}; do ssh ${node}.lab1.bandwidthclec.local 'sudo sh -c "tar zcvf - /var/log/elasticsearch/*.log"' > ${node}.lab1.tgz;done
@@ -1348,6 +1523,7 @@ show_template () {
 #es-master-01b.lab1.bandwidthclec.local
 #es-master-01c.lab1.bandwidthclec.local
 
+###############################################################################
 
 ### nodes stats
 #$ ./esl GET '_nodes/_local/stats?pretty'
@@ -1432,6 +1608,7 @@ show_template () {
 #  }
 #}
 
+###############################################################################
 
 #$ show_idx_sizes c | grep -E ".ml-ano|.ml-state|.ml-not|\.watches|.security|\.kibana"
 #.ml-anomalies-shared                5   0  580005659            109
@@ -1483,11 +1660,15 @@ show_template () {
 #
 #
 
+###############################################################################
+
 ### Show index sources (unique)
 # ./esl GET 'filebeat-6.5.1-2019.12.31/_search?pretty' | jq -r '.hits.hits[]._source.host.name' | sort -u
 # es-data-01e.lab1.bwnet.us
 # es-data-01f.lab1.bwnet.us
 
+
+###############################################################################
 
 ### Show what the analyzer thinks of a string of text
 ### NOTE: It's showing that the string is viewed as 2 tokens "akrzos" and "crashloop"
@@ -1512,6 +1693,8 @@ show_template () {
 #   ]
 # }
 
+###############################################################################
+
 ### Show number of shards in use by data node
 # $ show_shards l | awk '{print $8}' | grep -v node | sort | uniq -c
 #  454 lab-rdu-es-data-01a
@@ -1521,6 +1704,8 @@ show_template () {
 #  455 lab-rdu-es-data-01e
 #  454 lab-rdu-es-data-01f
 #  454 lab-rdu-es-data-01g
+
+###############################################################################
 
 ### Show thread_pool stats on each node
 # $ ./esc GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' | head
@@ -1536,6 +1721,8 @@ show_template () {
 # instance-0000000058 management               1        0   6725733
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-thread-pool.html
+
+###############################################################################
 
 ### Show hot threads by node
 # $ ./esp GET '_nodes/hot_threads' | head -30
@@ -1571,3 +1758,88 @@ show_template () {
 #        java.base@13.0.2/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-hot-threads.html
+
+###############################################################################
+
+### Show disk_info on allocation explain
+# $ ./esl GET '_cluster/allocation/explain?include_disk_info&pretty' | head -20
+# {
+#   "index" : ".reindexed-v6-kibana-6",
+#   "shard" : 0,
+#   "primary" : true,
+#   "current_state" : "unassigned",
+#   "unassigned_info" : {
+#     "reason" : "INDEX_REOPENED",
+#     "at" : "2020-05-20T18:26:38.341Z",
+#     "last_allocation_status" : "no_valid_shard_copy"
+#   },
+#   "cluster_info" : {
+#     "nodes" : {
+#       "3is48GZERPOBPNbNpPXs3Q" : {
+#         "node_name" : "lab-rdu-es-data-01f",
+#         "least_available" : {
+#           "path" : "/mnt/data/nodes/0",
+#           "total_bytes" : 7676845096960,
+#           "used_bytes" : 5496087470080,
+#           "free_bytes" : 2180757626880,
+#           "free_disk_percent" : 28.4,
+#           ...
+#           ...
+#               "shard_sizes" : {
+#       "[filebeat-flow-2020.05.20-03][0][p]_bytes" : 92172906,
+#       "[packetbeat-default-2020.04.20][0][r]_bytes" : 9393908959,
+#       "[filebeat-6.5.1-2020.04.25][0][p]_bytes" : 30009805131,
+#       "[filebeat-6.5.1-2020.04.26][3][r]_bytes" : 30039754237,
+#       "[syslog-2020.05.18][0][r]_bytes" : 11180946816,
+#       "[metricbeat-7.6.2-2020.05.17][2][r]_bytes" : 1962187595,
+#       "[filebeat-6.5.1-2020.04.23][7][p]_bytes" : 26908059724,
+#       "[filebeat-6.5.1-2020.05.16][14][p]_bytes" : 20945511780,
+#       "[filebeat-6.5.1-2020.04.21][1][r]_bytes" : 21316835144,
+#       "[metricbeat-6.1.1-2020.05.05][0][p]_bytes" : 3899587343,
+#       "[filebeat-6.5.1-2020.04.29][8][r]_bytes" : 26165521223,
+#       "[.kibana_task_manager_2][0][p]_bytes" : 27896,
+#       "[metricbeat-6.1.1-2020.05.15][0][p]_bytes" : 3862449618,
+#       "[filebeat-6.5.1-2020.04.07][13][p]_bytes" : 18493,
+#       "[filebeat-6.5.1-2020.04.21][0][r]_bytes" : 21179378802,
+#       "[metricbeat-default-2020.05.09][2][p]_bytes" : 2225141043,
+#       "[filebeat-6.5.1-2020.05.15][0][r]_bytes" : 32267637240,
+#       "[syslog-2020.04.27][0][p]_bytes" : 14096624411,
+#       "[metricbeat-default-2020.05.15][1][p]_bytes" : 2291584755,
+
+###############################################################################
+
+### Show HDD usage
+# $ ./esl GET '_nodes/stats/fs?human&pretty' | head -20
+# {
+#   "_nodes" : {
+#     "total" : 11,
+#     "successful" : 11,
+#     "failed" : 0
+#   },
+#   "cluster_name" : "lab-rdu-es-01",
+#   "nodes" : {
+#     "kp56LtTuTZSVfYfC3uAzjQ" : {
+#       "timestamp" : 1590001093604,
+#       "name" : "lab-rdu-es-data-01b",
+#       "transport_address" : "192.168.112.142:9300",
+#       "host" : "192.168.112.142",
+#       "ip" : "192.168.112.142:9300",
+#       "roles" : [
+#         "data",
+#         "ml"
+#       ],
+#       "attributes" : {
+#         "ml.machine_memory" : "134924824576",
+
+###############################################################################
+
+### Allocations
+# $ ./esl GET '_cat/allocation?v' | head -20
+# shards disk.indices disk.used disk.avail disk.total disk.percent host            ip              node
+#    429        4.6tb     4.6tb      2.3tb      6.9tb           66 192.168.116.29  192.168.116.29  lab-rdu-es-data-01d
+#    409        4.8tb     4.8tb   1019.8gb      5.8tb           82 192.168.112.143 192.168.112.143 lab-rdu-es-data-01c
+#    341        4.4tb     4.4tb      2.5tb      6.9tb           63 192.168.116.32  192.168.116.32  lab-rdu-es-data-01g
+#    410        4.9tb     4.9tb    917.8gb      5.8tb           84 192.168.112.141 192.168.112.141 lab-rdu-es-data-01a
+#    420        4.8tb     4.8tb    969.8gb      5.8tb           83 192.168.112.142 192.168.112.142 lab-rdu-es-data-01b
+#    417        4.9tb     4.9tb      1.9tb      6.9tb           71 192.168.116.31  192.168.116.31  lab-rdu-es-data-01f
+#      1                                                                                           UNASSIGNED
