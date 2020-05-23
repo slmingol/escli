@@ -48,6 +48,28 @@ calc_date () {
     ${dateCmd} -u --date="$english_days" +%Y.%m.%d
 }
 
+gen_README () {
+    # generate contents of README.md
+    cat \
+         <($sedCmd -n '0,/^$ escli_ls$/p' README.md) \
+         <(escli_ls) \
+         <($sedCmd -n '/^show_template$/,/^You can also get that list/p' README.md | grep -v '^show_template$') \
+         <(grep -B1 '^$ escli_lsl$' README.md) \
+         <(escli_lsl) \
+         <($sedCmd -n '/^show_template[  ]\+#/,$p' README.md | $sedCmd -n '4,$p')
+}
+
+cmp_README () {
+    # sdiff new README.md vs. existing README.md
+    sdiff <(gen_README) README.md | less
+}
+
+mk_README () {
+    # save new README.md over existing README.md
+    gen_README > README.md.new
+    cp -f README.md.new README.md
+    rm -f README.md.new
+}
 
 #1-----------------------------------------------
 # usage funcs
@@ -65,7 +87,7 @@ escli_lsl () {
             grep --color=never -A2 "^${line}" "${filename}"
         else
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
-                paste - - | pr -t -e32
+                paste - - | pr -t -e37
         fi
     done < <(awk '/^[0-9a-zA-Z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
