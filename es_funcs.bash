@@ -66,7 +66,7 @@ cmp_README () {
 
 mk_README () {
     # save new README.md over existing README.md
-    gen_README > README.md.new
+    gen_README | tee README.md.new
     cp -f README.md.new README.md
     rm -f README.md.new
 }
@@ -83,7 +83,7 @@ cmp_EXAMPLES () {
 
 mk_EXAMPLES () {
     # save new EXAMPLES.md over existing EXAMPLES.md
-    gen_EXAMPLES > EXAMPLES.md.new
+    gen_EXAMPLES | tee EXAMPLES.md.new
     cp -f EXAMPLES.md.new EXAMPLES.md
     rm -f EXAMPLES.md.new
 }
