@@ -120,6 +120,9 @@ calc_date
 gen_README
 cmp_README
 mk_README
+gen_EXAMPLES
+cmp_EXAMPLES
+mk_EXAMPLES
 escli_ls
 escli_lsl
 help_cat
@@ -216,6 +219,9 @@ calc_date                                # print UTC date X "days | days ago"
 gen_README                               # generate contents of README.md
 cmp_README                               # sdiff new README.md vs. existing README.md
 mk_README                                # save new README.md over existing README.md
+gen_EXAMPLES                             # generate content of EXAMPLES.md
+cmp_EXAMPLES                             # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
+mk_EXAMPLES                              # save new EXAMPLES.md over existing EXAMPLES.md
 
 #1-----------------------------------------------
 # usage funcs
