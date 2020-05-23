@@ -71,6 +71,24 @@ mk_README () {
     rm -f README.md.new
 }
 
+gen_EXAMPLES () {
+    # generate content of EXAMPLES.md
+    ./gen_EXAMPLES.bash
+}
+
+cmp_EXAMPLES () {
+    # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
+    sdiff <(gen_EXAMPLES) EXAMPLES.md | less
+}
+
+mk_EXAMPLES () {
+    # save new EXAMPLES.md over existing EXAMPLES.md
+    gen_EXAMPLES > EXAMPLES.md.new
+    cp -f EXAMPLES.md.new EXAMPLES.md
+    rm -f EXAMPLES.md.new
+}
+
+
 #1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
@@ -813,7 +831,7 @@ shorecov_hot_threads () {
     # show hot thread details
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_nodes/_local/hot_threads' | jq -C . | less -r
+    ${escmd[$env]} GET '_nodes/_local/hot_threads'
 }
 
 shorecov_idx_shard_stats () {
@@ -902,8 +920,10 @@ show_idx_doc_sources_1st_10k () {
     printf "Total Docs: [%s]\n" "$totalCnt"
     printf "=========================\n\n"
 
-    ${escmd[$env]} GET ${idxArg}'/_search?size=10000' | jq '. | .hits.hits[] | [._index, ._source.host.name, ._source."@timestamp"]' \
-        | paste - - - - -  | column -t
+    ${escmd[$env]} GET ${idxArg}'/_search?size=10' \
+        | jq '. | .hits.hits[] | [._index, ._source.beat.hostname, ._source."@timestamp"]' \
+        | paste - - - - -  \
+        | column -t
     printf "\n\n"
 }
 
