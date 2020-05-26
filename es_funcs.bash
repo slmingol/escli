@@ -48,6 +48,28 @@ calc_date () {
     ${dateCmd} -u --date="$english_days" +%Y.%m.%d
 }
 
+calc_date_1daybefore () {
+    # print UTC date X 1 day before given date (YYYY-mm-dd)
+    local date="$1"
+
+    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
+    [[ ! $date =~ [0-9]{4}-[0-9]+-[0-9]+ ]] && \
+        printf "\nUSAGE: ${FUNCNAME[1]} [YYYY-mm-dd]\n\n" && return 1
+
+    ${dateCmd} -u --date="$date -1 days" +%Y.%m.%d
+}
+
+calc_date_1dayafter () {
+    # print UTC date X 1 day after given date (YYYY-mm-dd)
+    local date="$1"
+
+    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
+    [[ ! $date =~ [0-9]{4}-[0-9]+-[0-9]+ ]] && \
+        printf "\nUSAGE: ${FUNCNAME[1]} [YYYY-mm-dd]\n\n" && return 1
+
+    ${dateCmd} -u --date="$date +1 days" +%Y.%m.%d
+}
+
 gen_README () {
     # generate contents of README.md
     cat \
@@ -938,7 +960,9 @@ show_idx_doc_sources_all_cnts () {
 
     printf "\n\n"
     printf "Document sources (counts)\n"
-    printf "=========================\n\n"
+    printf "===================================\n"
+    printf "Idx: [%s]\n" "$idxArg"
+    printf "===================================\n\n"
 
     ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
         '{
@@ -948,7 +972,7 @@ show_idx_doc_sources_all_cnts () {
                 "terms" : { "field": "host.name",  "size": 500 }
             }
           }
-        }' | jq '.aggregations.hosts.buckets | .[]' | paste - - - -  | column -t
+        }' | jq '.aggregations.hosts.buckets | .[]' | paste - - - -  | sed -e 's/[",]//g' | column -t
     printf "\n\n"
 }
 
@@ -957,6 +981,8 @@ show_idx_doc_sources_all_k8sns_cnts () {
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
+
+    timestamp=$(echo "${idxArg}" | sed -e 's/.*-//' -e 's/\./-/g')
 
     printf "\n\n"
     printf "k8s document sources (counts)\n"
@@ -984,15 +1010,14 @@ show_idx_doc_sources_all_k8sns_cnts () {
 #            }
 #          } 
 #        }' #| jq '.aggregations.k8sns.buckets | .[]' #| paste - - - -  | column -t
-
-    #${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
-    ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
-		'{
+    SEARCHQUERY=$(cat <<-EOM
+		{
 		  "size": 0,
 		  "query" : {
 		    "range": {
 		      "@timestamp": {
-		        "gte": "now-1d/d"
+                "gte": "$(echo "$timestamp" | sed 's/\./-/g')",
+                "lte": "$(echo "$timestamp" | sed 's/\./-/g')"
 		      }
 		    }
 		  },
@@ -1009,7 +1034,11 @@ show_idx_doc_sources_all_k8sns_cnts () {
 		        }
 		    }
 		  }
-        }' \
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} GET ${idxArg}'/_search?pretty' -d "$SEARCHQUERY")
+    echo "$cmdOutput" \
         | jq '.aggregations.k8sns.buckets[] | .key, .daily_buckets.buckets[].key_as_string, .daily_buckets.buckets[].doc_count' \
         | paste - - -  \
         | column -t
@@ -1885,3 +1914,14 @@ show_template () {
 #    420        4.8tb     4.8tb    969.8gb      5.8tb           83 192.168.112.142 192.168.112.142 lab-rdu-es-data-01b
 #    417        4.9tb     4.9tb      1.9tb      6.9tb           71 192.168.116.31  192.168.116.31  lab-rdu-es-data-01f
 #      1                                                                                           UNASSIGNED
+
+
+### analyzing retention outliers
+# $  1096  for i in $(show_idx_retention_violations p filebeat 60 | grep filebeat); do \
+#     show_idx_doc_sources_all_cnts p $i;done \
+#     | grep key \
+#     | awk '{print $3}' \
+#     | sort -u > b
+# $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i date)";done
+# $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i grep Cen /etc/redhat-release)";done
+# $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i filebeat version)";done
