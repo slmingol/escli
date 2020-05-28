@@ -117,6 +117,8 @@ This is a list of the functions it provides:
 ```
 $ escli_ls
 calc_date
+calc_date_1daybefore
+calc_date_1dayafter
 gen_README
 cmp_README
 mk_README
@@ -162,6 +164,7 @@ estop
 estop_recovery
 estop_relo
 estop_tasks
+estop_rejected_writes
 show_health
 show_watermarks
 show_state
@@ -216,6 +219,8 @@ $ escli_lsl
 # helper funcs
 ##-----------------------------------------------
 calc_date                                # print UTC date X "days | days ago"
+calc_date_1daybefore                     # print UTC date X 1 day before given date (YYYY-mm-dd)
+calc_date_1dayafter                      # print UTC date X 1 day after given date (YYYY-mm-dd)
 gen_README                               # generate contents of README.md
 cmp_README                               # sdiff new README.md vs. existing README.md
 mk_README                                # save new README.md over existing README.md
@@ -289,6 +294,7 @@ estop                                    # mimics `top` command, watching ES nod
 estop_recovery                           # watches the ES recovery queue
 estop_relo                               # watches ES relocations
 estop_tasks                              # watches ES tasks
+estop_rejected_writes                    # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
 show_health                              # cluster's health stats
 show_watermarks                          # show watermarks when storage marks readonly
 show_state                               # shows the state of the indicies' shards (RELO, Translog, etc.)
