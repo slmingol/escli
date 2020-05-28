@@ -814,6 +814,16 @@ estop_tasks () {
     watch "${escmd["$env"]} GET '_cat/tasks?pretty&v&h=action,type,running_time,node' | head -40"
 }
 
+estop_rejected_writes () {
+    # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed'  \
+        | grep -E 'write|completed' \
+        | awk 'NR == 1; NR > 1 {print \$0 | \"sort -k4,4gr\"}' \
+        | head -40"
+}
+
 show_health () {
     # cluster's health stats
     local env="$1"
@@ -1779,7 +1789,7 @@ show_template () {
 ###############################################################################
 
 ### Show thread_pool stats on each node
-# $ ./esc GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' | head
+# $ ./esc | head
 # node_name           name                active rejected completed
 # instance-0000000058 analyze                  0        0         0
 # instance-0000000058 fetch_shard_started      0        0         0
