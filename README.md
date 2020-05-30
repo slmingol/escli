@@ -135,6 +135,7 @@ list_nodes_zenoss_alarms
 show_nodes_fs_details
 show_nodes_circuit-breaker_summary
 show_nodes_circuit-breaker_details
+show_nodes_threadpools
 show_shards
 show_big_shards
 show_small_shards
@@ -143,6 +144,10 @@ relo_shard
 cancel_relo_shard
 cancel_relo_shards_all
 retry_unassigned_shards
+show_shard_distribution_by_node_last3days
+show_shards_biggerthan50gb
+show_idx_with_oversized_shards_summary
+show_idx_with_oversized_shards_details
 show_balance_throttle
 increase_balance_throttle
 increase_balance_throttle_XXXmb
@@ -218,151 +223,156 @@ $ escli_lsl
 #0-----------------------------------------------
 # helper funcs
 ##-----------------------------------------------
-calc_date                                # print UTC date X "days | days ago"
-calc_date_1daybefore                     # print UTC date X 1 day before given date (YYYY-mm-dd)
-calc_date_1dayafter                      # print UTC date X 1 day after given date (YYYY-mm-dd)
-gen_README                               # generate contents of README.md
-cmp_README                               # sdiff new README.md vs. existing README.md
-mk_README                                # save new README.md over existing README.md
-gen_EXAMPLES                             # generate content of EXAMPLES.md
-cmp_EXAMPLES                             # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
-mk_EXAMPLES                              # save new EXAMPLES.md over existing EXAMPLES.md
+calc_date                                     # print UTC date X "days | days ago"
+calc_date_1daybefore                          # print UTC date X 1 day before given date (YYYY-mm-dd)
+calc_date_1dayafter                           # print UTC date X 1 day after given date (YYYY-mm-dd)
+gen_README                                    # generate contents of README.md
+cmp_README                                    # sdiff new README.md vs. existing README.md
+mk_README                                     # save new README.md over existing README.md
+gen_EXAMPLES                                  # generate content of EXAMPLES.md
+cmp_EXAMPLES                                  # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
+mk_EXAMPLES                                   # save new EXAMPLES.md over existing EXAMPLES.md
 
 #1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
-escli_ls                                 # list function names
-escli_lsl                                # list function names + desc.
+escli_ls                                      # list function names
+escli_lsl                                     # list function names + desc.
 
 #2-----------------------------------------------
 # help funcs
 ##-----------------------------------------------
-help_cat                                 # print help for _cat API call
-help_indices                             # print help for _cat/indices API call
+help_cat                                      # print help for _cat API call
+help_indices                                  # print help for _cat/indices API call
 
 #3-----------------------------------------------
 # node funcs
 ##-----------------------------------------------
-list_nodes                               # list ES nodes along w/ a list of data node suffixes for use by other cmds.
-list_nodes_storage                       # list ES nodes HDD usage
-list_nodes_zenoss_alarms                 # list ES node HDD usage alarms in Zenoss
-show_nodes_fs_details                    # list ES nodes filesystem details
-show_nodes_circuit-breaker_summary       # list ES nodes circuit breaker tripped summaries
-show_nodes_circuit-breaker_details       # list ES nodes circuit breaker details
+list_nodes                                    # list ES nodes along w/ a list of data node suffixes for use by other cmds.
+list_nodes_storage                            # list ES nodes HDD usage
+list_nodes_zenoss_alarms                      # list ES node HDD usage alarms in Zenoss
+show_nodes_fs_details                         # list ES nodes filesystem details
+show_nodes_circuit-breaker_summary            # list ES nodes circuit breaker tripped summaries
+show_nodes_circuit-breaker_details            # list ES nodes circuit breaker details
+show_nodes_threadpools                        # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
 
 #4-----------------------------------------------
 # shard mgmt funcs
 ##-----------------------------------------------
-show_shards                              # list all the index shards sorted by size (big->small)
-show_big_shards                          # list top 20 shards for a given node's suffix (1a, 1b, etc.)
-show_small_shards                        # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
-show_shard_usage_by_node                 # list all the index shards sorted by size (big->small)
-relo_shard                               # move an indices' shard from node suffix X to node suffix Y
-cancel_relo_shard                        # cancel move of an index shard from node suffix X
-cancel_relo_shards_all                   # cancel all shard RELOCATIONS in recovery queue
-retry_unassigned_shards                  # reallocate all unassignable shards (elapsed past 5 retries)
+show_shards                                   # list all the index shards sorted by size (big->small)
+show_big_shards                               # list top 20 shards for a given node's suffix (1a, 1b, etc.)
+show_small_shards                             # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
+show_shard_usage_by_node                      # list all the index shards sorted by size (big->small)
+relo_shard                                    # move an indices' shard from node suffix X to node suffix Y
+cancel_relo_shard                             # cancel move of an index shard from node suffix X
+cancel_relo_shards_all                        # cancel all shard RELOCATIONS in recovery queue
+retry_unassigned_shards                       # reallocate all unassignable shards (elapsed past 5 retries)
+show_shard_distribution_by_node_last3days     # show distribution of day X's shards across nodes
+show_shards_biggerthan50gb                    # show shards which are > 50GB (too big)
+show_idx_with_oversized_shards_summary        # show summary of indexes w/ shards > 50GB (too big)
+show_idx_with_oversized_shards_details        # show detailed view of indexes w/ shards > 50GB (too big)
 
 #5-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
-show_balance_throttle                    # show routing allocations for balancing & recoveries (current)
-increase_balance_throttle                # increase routing allocations for balancing & recoveries (throttle open)
-increase_balance_throttle_XXXmb          # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
-reset_balance_throttle                   # reset routing allocations for balancing & recoveries (throttle default)
-change_allocation_threshold              # override the allocation threshold (cluster.routing.allocation.balance.threshold)
+show_balance_throttle                         # show routing allocations for balancing & recoveries (current)
+increase_balance_throttle                     # increase routing allocations for balancing & recoveries (throttle open)
+increase_balance_throttle_XXXmb               # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
+reset_balance_throttle                        # reset routing allocations for balancing & recoveries (throttle default)
+change_allocation_threshold                   # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
 #6-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
-show_recovery                            # show a summary of recovery queue
-show_recovery_full                       # show full details of recovery queue
-enable_readonly_idx_pattern              # set index read_only flag for pattern of indices
-disable_readonly_idx_pattern             # clear index read_only flag for pattern of indices
-enable_readonly_idxs                     # set index read_only flag
-disable_readonly_idxs                    # clear index read_only flag
-show_readonly_idxs                       # show indexes' read_only setting which are enabled (true)
-show_readonly_idxs_full                  # show indexes' read_only setting for all indices
-clear_readonlyallowdel_idxs              # clear read_only_allow_delete flag
-set_idx_default_field                    # set index.query.default_field => [ "*" ]
-set_tmplate_default_field                # set template index.query.default_field => [ "*" ]
-set_idx_num_replicas_to_X                # set an index's number_of_replicas to X
+show_recovery                                 # show a summary of recovery queue
+show_recovery_full                            # show full details of recovery queue
+enable_readonly_idx_pattern                   # set index read_only flag for pattern of indices
+disable_readonly_idx_pattern                  # clear index read_only flag for pattern of indices
+enable_readonly_idxs                          # set index read_only flag
+disable_readonly_idxs                         # clear index read_only flag
+show_readonly_idxs                            # show indexes' read_only setting which are enabled (true)
+show_readonly_idxs_full                       # show indexes' read_only setting for all indices
+clear_readonlyallowdel_idxs                   # clear read_only_allow_delete flag
+set_idx_default_field                         # set index.query.default_field => [ "*" ]
+set_tmplate_default_field                     # set template index.query.default_field => [ "*" ]
+set_idx_num_replicas_to_X                     # set an index's number_of_replicas to X
 
 #7-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
-estop                                    # mimics `top` command, watching ES nodes CPU/MEM usage
-estop_recovery                           # watches the ES recovery queue
-estop_relo                               # watches ES relocations
-estop_tasks                              # watches ES tasks
-estop_rejected_writes                    # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
-show_health                              # cluster's health stats
-show_watermarks                          # show watermarks when storage marks readonly
-show_state                               # shows the state of the indicies' shards (RELO, Translog, etc.)
-showcfg_cluster                          # show all '_cluster/settings' configs
-showrecov_stats                          # show recovery stats (_recovery)
-shorecov_hot_threads                     # show hot thread details
-shorecov_idx_shard_stats                 # show an index's shard stats
-show_stats_cluster                       # shows the _stats for entire cluster
-show_tasks_stats                         # shows the tasks queue
-verify_idx_retentions                    # shows the distribution of index retentions (days per index type & version)
-show_idx_retention_violations            # shows the indexes which fall outside a given retention window (days)
-show_idx_doc_sources_1st_10k             # show the hostnames that sent documents to an index
-show_idx_doc_sources_all_cnts            # show the total num. docs each hostname sent to an index
-show_idx_doc_sources_all_k8sns_cnts      # show the total num. docs each namespace sent to an index
+estop                                         # mimics `top` command, watching ES nodes CPU/MEM usage
+estop_recovery                                # watches the ES recovery queue
+estop_relo                                    # watches ES relocations
+estop_tasks                                   # watches ES tasks
+estop_rejected_writes                         # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
+show_health                                   # cluster's health stats
+show_watermarks                               # show watermarks when storage marks readonly
+show_state                                    # shows the state of the indicies' shards (RELO, Translog, etc.)
+showcfg_cluster                               # show all '_cluster/settings' configs
+showrecov_stats                               # show recovery stats (_recovery)
+shorecov_hot_threads                          # show hot thread details
+shorecov_idx_shard_stats                      # show an index's shard stats
+show_stats_cluster                            # shows the _stats for entire cluster
+show_tasks_stats                              # shows the tasks queue
+verify_idx_retentions                         # shows the distribution of index retentions (days per index type & version)
+show_idx_retention_violations                 # shows the indexes which fall outside a given retention window (days)
+show_idx_doc_sources_1st_10k                  # show the hostnames that sent documents to an index
+show_idx_doc_sources_all_cnts                 # show the total num. docs each hostname sent to an index
+show_idx_doc_sources_all_k8sns_cnts           # show the total num. docs each namespace sent to an index
 
 #8-----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
-showcfg_num_shards_per_idx               # show number of shards configured per index template
-showcfg_shard_allocations                # show cluster level shard allocation configs
-explain_allocations                      # show details (aka. explain) cluster allocation activity
-explain_allocations_hddinfo              # show details (aka. explain) cluster allocation activity (full)
-show_shard_routing_allocation            # show status (cluster.routing.allocation.enable)
-enable_shard_allocations                 # allow the allocator to route shards (cluster.routing.allocation.enable)
-disable_shard_allocations                # disallow the allocator to route shards (cluster.routing.allocation.enable)
-clear_shard_allocations                  # clear the allocator to route shards (cluster.routing.allocation.enable)
+showcfg_num_shards_per_idx                    # show number of shards configured per index template
+showcfg_shard_allocations                     # show cluster level shard allocation configs
+explain_allocations                           # show details (aka. explain) cluster allocation activity
+explain_allocations_hddinfo                   # show details (aka. explain) cluster allocation activity (full)
+show_shard_routing_allocation                 # show status (cluster.routing.allocation.enable)
+enable_shard_allocations                      # allow the allocator to route shards (cluster.routing.allocation.enable)
+disable_shard_allocations                     # disallow the allocator to route shards (cluster.routing.allocation.enable)
+clear_shard_allocations                       # clear the allocator to route shards (cluster.routing.allocation.enable)
 
 #9-----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
-show_idx_sizes                           # show index sizes sorted (big -> small)
-show_idx_stats                           # show index stats sorted (big -> small)
-delete_idx                               # delete an index
-showcfg_idx_cfgs                         # show all '<index name>/_settings' configs
-showcfg_idx_stats                        # show all '<index name>/_stats'
-show_idx_version_cnts                    # show index sizes sorted (big -> small)
+show_idx_sizes                                # show index sizes sorted (big -> small)
+show_idx_stats                                # show index stats sorted (big -> small)
+delete_idx                                    # delete an index
+showcfg_idx_cfgs                              # show all '<index name>/_settings' configs
+showcfg_idx_stats                             # show all '<index name>/_stats'
+show_idx_version_cnts                         # show index sizes sorted (big -> small)
 
 #10----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
-show_excluded_nodes                      # show excluded nodes from cluster
-exclude_node_name                        # exclude a node from cluster (node suffix)
-clear_excluded_nodes                     # clear any excluded cluster nodes
+show_excluded_nodes                           # show excluded nodes from cluster
+exclude_node_name                             # exclude a node from cluster (node suffix)
+clear_excluded_nodes                          # clear any excluded cluster nodes
 
 #11----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
-eswhoami                                 # show auth info about who am i
-showcfg_auth_roles                       # show auth info about roles
-showcfg_auth_rolemappings                # show auth info about role mappings
-list_auth_roles                          # list all roles
-list_auth_rolemappings                   # list all rolemappings
-evict_auth_cred_cache                    # evict/clear users from the user cache
-create_bearer_token                      # create bearer token for user
+eswhoami                                      # show auth info about who am i
+showcfg_auth_roles                            # show auth info about roles
+showcfg_auth_rolemappings                     # show auth info about role mappings
+list_auth_roles                               # list all roles
+list_auth_rolemappings                        # list all rolemappings
+evict_auth_cred_cache                         # evict/clear users from the user cache
+create_bearer_token                           # create bearer token for user
 
 #12----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
-del_docs_k8s_ns_range                    # delete k8s namespace docs over a specific time range
-forcemerge_to_expunge_deletes            # force merge of shards to expunge deleted docs
-estail_deletebyquery                     # watch deletebyquery tasks
-estail_forcemerge                        # watch forcemerges in tasks queue
+del_docs_k8s_ns_range                         # delete k8s namespace docs over a specific time range
+forcemerge_to_expunge_deletes                 # force merge of shards to expunge deleted docs
+estail_deletebyquery                          # watch deletebyquery tasks
+estail_forcemerge                             # watch forcemerges in tasks queue
 
 #13----------------------------------------------
 # template funcs
 ##-----------------------------------------------
-list_templates                           # show all template details
-show_template                            # show template X's details
+list_templates                                # show all template details
+show_template                                 # show template X's details
 
 
 ```

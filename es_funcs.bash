@@ -128,7 +128,7 @@ escli_lsl () {
             grep --color=never -A2 "^${line}" "${filename}"
         else
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
-                paste - - | pr -t -e37
+                paste - - | pr -t -e42
         fi
     done < <(awk '/^[0-9a-zA-Z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
@@ -404,8 +404,8 @@ show_nodes_circuit-breaker_details () {
     ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' | jq . -C | less -r
 }
 
-show_node_threadpools () {
-	# list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
+show_nodes_threadpools () {
+    # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' \
@@ -581,7 +581,7 @@ show_shard_distribution_by_node_last3days () {
 }
 
 show_shards_biggerthan50gb () {
-	# show shards which are > 50GB (too big)
+    # show shards which are > 50GB (too big)
     local env="$1"
     usage_chk1 "$env" || return 1
 
