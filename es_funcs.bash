@@ -111,6 +111,7 @@ mk_EXAMPLES () {
 }
 
 
+
 #1-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
@@ -199,6 +200,21 @@ usage_chk6 () {
     local sTime="$4"
     local eTime="$5"
 
+	MSG1=$(cat <<-EOM
+
+	    ------------------------------------------------------------------------------------------------------
+
+	    Example
+	    =======
+	    $ del_docs_k8s_ns_range l filebeat-* big-dipper-perf 2019-07-11T11:57:20.968Z 2019-07-12T04:26:38.757Z
+	    {"task":"vudQxvnfSQuxMtdkq8ZTUQ:844209600"}
+
+	    ------------------------------------------------------------------------------------------------------
+
+	        Source: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
+	EOM
+    )
+
     [[ $env =~ [lpc] && $idxArg != '' \
             && $namespace != '' \
             && $sTime != '' \
@@ -208,10 +224,11 @@ usage_chk6 () {
         && return 0 || \
             printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern> <k8s namespace> <start time> <end time>\n\n\n" \
                 && printf "  * TIME FORMAT: 2019-07-10T00:00:00.000Z\n\n" \
-                && printf "  * INDX FORMAT:\n      -- %s\n      -- %s\n      -- %s\n\n\n" \
+                && printf "  * INDX FORMAT:\n      -- %s\n      -- %s\n      -- %s\n\n%s\n\n\n" \
                     "filebeat-*" \
                     "-or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,...." \
                     "-or- filebeat-*-2019.07*" \
+                    "$MSG1" \
         && return 1
 }
 
@@ -250,6 +267,7 @@ usage_chk9 () {
         && printf "  NOTE: ...minimum is 40, the max. 2000!...\n\n\n" \
         && return 1
 }
+
 
 
 #2-----------------------------------------------
@@ -386,6 +404,16 @@ show_nodes_circuit-breaker_details () {
     ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' | jq . -C | less -r
 }
 
+show_node_threadpools () {
+	# list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' \
+		| grep -v '0[ ]\+0[ ]\+0'
+}
+
+
+
 #4-----------------------------------------------
 # shard mgmt funcs
 ##-----------------------------------------------
@@ -506,6 +534,120 @@ retry_unassigned_shards () {
     cmdOutput=$(${escmd[$env]} POST '_cluster/reroute?retry_failed&explain&pretty')
     echo "${cmdOutput}" | less
 }
+
+show_shard_distribution_by_node_last3days () {
+    # show distribution of day X's shards across nodes
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    cat <<-EOM
+
+	429's (es_rejected_execution_exception)
+	---------------------------------------
+	Below shows the distribution of a given date's shards by node. If too many of a given days shards
+	end up on the same node, you may enounter 429s, for e.g.:
+	-------------------------------------------------------------------------------------------------------------
+
+	    [2020-05-28T21:33:45,574][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with
+	    response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing
+	    of [2372784339][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.05.28][13]]
+	    containing [7] requests, target allocation id: basnD3RDQeurw3HJ-Ss0CQ, primary term: 1 on
+	    EsThreadPoolExecutor[name = rdu-es-data-01j/write, queue capacity = 200,
+
+	    org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@7b8b41e3[Running, pool size = 40, active
+	    threads = 40, queued tasks = 200, completed tasks = 1321763404]]"})
+
+	-------------------------------------------------------------------------------------------------------------
+
+	Sources:
+       - https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing
+       - https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-threadpool.html
+
+
+	EOM
+
+    for day in {0..3}; do
+        local YYmmdd="$(calc_date "${day} days ago")"
+        printf "\n"
+        printf "[DATE: %s]\n\n" "$YYmmdd"
+        (
+            printf "node #shards\n"
+            printf -- "---- -------\n"
+            show_shards "$env" | grep "$YYmmdd" | awk '{print $8}' | sort | uniq -c | awk '{print $2, $1}'
+        ) | column -t
+        printf "\n==============================================\n"
+    done
+    printf "\n\n"
+}
+
+show_shards_biggerthan50gb () {
+	# show shards which are > 50GB (too big)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    shards=$(show_shards "$env")
+
+    cat <<-EOM
+
+	Shards > 50GB
+	$(printf "%s\n\n\n" "$(printf '=%.0s' {1..100})")
+
+	EOM
+
+    {
+        echo "$shards" | head -1
+        echo "$shards" | grep 'gb ' | sed 's/gb / /' \
+            | awk '$6 > 50 && sub("$", "gb", $6) || NR==1' \
+            | sort -k6,6gr
+    } | column -t
+    printf "%s\n\n\n" "$(printf '=%.0s' {1..100})"
+}
+
+show_idx_with_oversized_shards_summary () {
+    # show summary of indexes w/ shards > 50GB (too big)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    printf "\n\n"
+    printf "Daily Indicies w/ > 50GB shards"
+    printf "\n\n"
+
+    {
+     printf "days IdxType\n"
+     printf -- "---- -------\n"
+    show_shards_biggerthan50gb "$env"  \
+        | grep -vE  '===|^$|index|Shards' \
+        | awk '{print $1}' \
+        | sort -u \
+        | sed 's/-[0-9]\{4\}.*//' \
+        | uniq -c
+    } | column -t
+
+    printf "\n\n"
+}
+
+show_idx_with_oversized_shards_details () {
+    # show detailed view of indexes w/ shards > 50GB (too big)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    printf "\n\n"
+    printf "Daily Indicies w/ shards (primaries) > 50GB"
+    printf "\n\n"
+
+    {
+     printf "Idx Shard# ShardType ShardSize\n"
+     printf -- "--- ------- -------- ---------\n"
+     show_shards_biggerthan50gb "$env" \
+         | grep -vE 'Shards|===|index' \
+         | awk '$3 ~ /p/ {print $1, $2, $3, $6}' \
+         | sort -k1,1; 
+     } | column -t
+
+    printf "\n\n"
+}
+
+
 
 #5-----------------------------------------------
 # increase/decrease relo/recovery throttles
@@ -1378,6 +1520,7 @@ del_docs_k8s_ns_range () {
     local stime="$4"
     local etime="$5"
     usage_chk6 "$env" "$idxArg" "$ns" "$stime" "$etime" || return 1
+
     DELQUERY=$(cat <<-EOM
         {
           "query": {
@@ -1406,11 +1549,6 @@ del_docs_k8s_ns_range () {
 	EOM
     )
     ${escmd["$env"]} POST "${idxArg}/_delete_by_query?conflicts=proceed&wait_for_completion=false" -d "$DELQUERY"
-    # eg: 
-    # $ del_docs_k8s_ns_range l filebeat-* big-dipper-perf 2019-07-11T11:57:20.968Z 2019-07-12T04:26:38.757Z
-    # {"task":"vudQxvnfSQuxMtdkq8ZTUQ:844209600"}
-
-    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
 }
 
 forcemerge_to_expunge_deletes () {
@@ -1935,3 +2073,36 @@ show_template () {
 # $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i date)";done
 # $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i grep Cen /etc/redhat-release)";done
 # $ utc; for i in $(<b); do printf "%-75s  %-s\n" "$i" "$(gtimeout 5 ssh $i filebeat version)";done
+
+### compare shard time metrics
+# $ echo 'idx                               shard node            flush.total_time flush.total indexing.index_time indexing.index_total merges.total_time merges.total refresh.time refresh.total search.fetch_time search.query_total'; for i in {19..28};do ./esp GET '_cat/shards?v&human&h=idx,shard,node,flush.total_time,flush.total,indexing.index_time,indexing.index_total,merges.total_time,merges.total,refresh.time,refresh.total,search.fetch_time,search.fetch_totalsearch.query_time,search.query_total&s=indexing.index_time:desc' | grep -E "node|fileb.*6.5.1.*2020.05.${i}" | head -3 | grep -v node; echo ''; done
+# idx                               shard node            flush.total_time flush.total indexing.index_time indexing.index_total merges.total_time merges.total refresh.time refresh.total search.fetch_time search.query_total
+# filebeat-6.5.1-2020.05.19         14    rdu-es-data-01g             6.7m         337                  1d             94528754                1d        21353         1.4h         16028                1m              44169
+# filebeat-6.5.1-2020.05.19         13    rdu-es-data-01m             6.1m         333                  1d             94528762             23.7h        21632         1.3h         16344             24.8s              20919
+# 
+# filebeat-6.5.1-2020.05.20         10    rdu-es-data-01m            10.5m         397                1.7d            118275423              1.3d        23182         3.3h         18830              4.2m              42763
+# filebeat-6.5.1-2020.05.20         13    rdu-es-data-01m            10.5m         384                1.6d            118281450              1.4d        22206         3.3h         18937             33.1m             371602
+# 
+# filebeat-6.5.1-2020.05.21         5     rdu-es-data-01i             6.5m         342                1.1d             99387742                1d        24015         1.4h         16065              1.4m              17046
+# filebeat-6.5.1-2020.05.21         8     rdu-es-data-01l               6m         330                  1d             99382642                1d        22162         1.3h         16185              1.1m              46364
+# 
+# filebeat-6.5.1-2020.05.22         6     rdu-es-data-01o            11.1m         544                1.5d            169300056              1.4d        29190         1.5h         17398             27.8s             164828
+# filebeat-6.5.1-2020.05.22         0     rdu-es-data-01r            11.5m         567                1.4d            169292819              1.4d        24689         1.4h         16439              1.3m             352700
+# 
+# filebeat-6.5.1-2020.05.23         14    rdu-es-data-01o             2.9m         201                 15h             64331403             14.7h        21164         1.1h         16223                2s              42910
+# filebeat-6.5.1-2020.05.23         13    rdu-es-data-01e               3m         202               14.9h             64327238             14.6h        22260         1.1h         16294              7.6s              28240
+# 
+# filebeat-6.5.1-2020.05.24         0     rdu-es-data-01m               2m         162               12.5h             51264537             11.1h        23777         1.1h         17145              5.2s              23282
+# filebeat-6.5.1-2020.05.24         4     rdu-es-data-01o               2m         161               10.9h             51271281             11.6h        17917           1h         16430                3s               2908
+# 
+# filebeat-6.5.1-2020.05.25         0     rdu-es-data-01h             2.7m         211                 14h             65052964             14.1h        20287           1h         17217              1.4s               9988
+# filebeat-6.5.1-2020.05.25         8     rdu-es-data-01f             2.9m         216               13.3h             65055745             14.6h        20036           1h         16550                3s              25223
+# 
+# filebeat-6.5.1-2020.05.26         3     rdu-es-data-01f            10.1m         350                1.4d            100531382              1.2d        20939           2h         15027             27.8s              36796
+# filebeat-6.5.1-2020.05.26         10    rdu-es-data-01f             9.7m         345                1.3d            100549091              1.2d        19549           2h         15009             39.2s              16040
+# 
+# filebeat-6.5.1-2020.05.27         9     rdu-es-data-01g             7.9m         364                1.2d            107866059              1.1d        20527         1.6h         15967                2m               6160
+# filebeat-6.5.1-2020.05.27         11    rdu-es-data-01j             7.8m         362                1.1d            107871935              1.1d        21644         1.6h         15715              1.8m              17988
+# 
+# filebeat-6.5.1-2020.05.28         1     rdu-es-data-01g            12.5m         418                2.6d            128744579              1.4d        29551         3.8h         17717                9m              17650
+# filebeat-6.5.1-2020.05.28         0     rdu-es-data-01m             7.5m         408                1.3d            128775519              1.2d        34021         1.8h         19332              6.4m               3739
