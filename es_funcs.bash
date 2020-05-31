@@ -110,6 +110,11 @@ mk_EXAMPLES () {
     rm -f EXAMPLES.md.new
 }
 
+ceiling_divide () {
+    # ceiling divide 2 numbers
+    ceiling_result=$(echo "($1 + $2 - 1)/$2" | bc)
+    echo "$ceiling_result"
+}
 
 
 #1-----------------------------------------------
@@ -1674,7 +1679,7 @@ calc_idx_type_avgs_Xdays () {
                             { printf("%0.0f %0.0f %0.0f %0.0f"), total2, total3, total4, total5 }'
     )"
 
-    printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's]\n" "$days"
+    printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's and represents P shard's usage]\n" "$days"
     printf "=====================\n\n"
     local output="$(
         printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage\n"
@@ -1685,6 +1690,28 @@ calc_idx_type_avgs_Xdays () {
 
     printf "%s\n\nTotals: %s\n\n" "$output" "$idxTotals" | column -t
     printf "\n\n"
+}
+
+calc_num_nodes_Xdays () {
+    # calc. the HDD storage required based on idx types usage over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    local stdHDDSize="7600"
+    
+    idxCalculations="$(calc_idx_type_avgs_Xdays "$env" "$days")"
+    sixtyDayStorage="$(echo "$idxCalculations" | awk '/Totals:/ { print $5 }')"
+    
+    printf "%s\n\n\n" "$idxCalculations" 
+
+    local nodes="$(ceiling_divide "$sixtyDayStorage" "$stdHDDSize")"
+    local nodes2x="$(bc <<<"2 * $nodes")"
+
+    printf "HDD Size (GB):           %s\n" "$stdHDDSize"
+    printf "Number of nodes (P):     %s\t (%s)\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
+    printf "Number of nodes (P & R): %s\t (%s)\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
+    printf "\n\n\n"
 }
 
 

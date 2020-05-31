@@ -125,6 +125,7 @@ mk_README
 gen_EXAMPLES
 cmp_EXAMPLES
 mk_EXAMPLES
+ceiling_divide
 escli_ls
 escli_lsl
 help_cat
@@ -213,6 +214,7 @@ forcemerge_to_expunge_deletes
 estail_deletebyquery
 estail_forcemerge
 calc_idx_type_avgs_Xdays
+calc_num_nodes_Xdays
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -236,6 +238,7 @@ mk_README                                     # save new README.md over existing
 gen_EXAMPLES                                  # generate content of EXAMPLES.md
 cmp_EXAMPLES                                  # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
 mk_EXAMPLES                                   # save new EXAMPLES.md over existing EXAMPLES.md
+ceiling_divide                                # ceiling divide 2 numbers
 
 #1-----------------------------------------------
 # usage funcs
@@ -376,6 +379,7 @@ estail_forcemerge                             # watch forcemerges in tasks queue
 # capacity planning functions
 ##-----------------------------------------------
 calc_idx_type_avgs_Xdays                      # calc. the avg number of docs & HDD storage used per idx types over X days
+calc_num_nodes_Xdays                          # calc. the HDD storage required based on idx types usage over X days
 
 #14----------------------------------------------
 # template funcs
