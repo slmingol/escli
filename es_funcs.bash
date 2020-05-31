@@ -1701,16 +1701,37 @@ calc_num_nodes_Xdays () {
     local stdHDDSize="7600"
     
     idxCalculations="$(calc_idx_type_avgs_Xdays "$env" "$days")"
+    sixtyDayDocs="$(echo "$idxCalculations" | awk '/Totals:/ { print $4 }')"
     sixtyDayStorage="$(echo "$idxCalculations" | awk '/Totals:/ { print $5 }')"
-    
     printf "%s\n\n\n" "$idxCalculations" 
 
     local nodes="$(ceiling_divide "$sixtyDayStorage" "$stdHDDSize")"
     local nodes2x="$(bc <<<"2 * $nodes")"
 
-    printf "HDD Size (GB):           %s\n" "$stdHDDSize"
-    printf "Number of nodes (P):     %s\t (%s)\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
-    printf "Number of nodes (P & R): %s\t (%s)\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
+    local storage2x="$(bc <<<"2 * $sixtyDayStorage")"
+    local docs2x="$(bc <<<"2 * $sixtyDayDocs")"
+
+    local storage2xPerNode="$(bc <<<"scale=2; $storage2x / $nodes2x")"
+    local docs2xPerNode="$(bc <<<"scale=2; $docs2x / $nodes2x")"
+    
+
+    outputWidth="$(( $(echo "$idxCalculations" | grep '===' | tail -1 | wc -c) - 1 ))"
+    printf "%s\n\n" "$(printf '=%.0s' $(seq 1 ${outputWidth}))"
+    printf "HDD Size (GB):                %s\n" "$stdHDDSize"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    printf "Number of nodes (P):          %s\t\t\t (%s)\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
+    printf "Number of nodes (P & R):      %s\t\t\t (%s)\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    printf "Tot. Agg. storage (P & R):    %s\n" "$storage2x"
+    printf "Tot. Agg. docs (P & R):       %s\n" "$docs2x"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    printf "Tot. Agg. storage (per node): %s\n" "$storage2xPerNode"
+    printf "Tot. Agg. docs (per node):    %s\n" "$docs2xPerNode"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
     printf "\n\n\n"
 }
 
