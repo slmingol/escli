@@ -268,6 +268,18 @@ usage_chk9 () {
         && return 1
 }
 
+usage_chk10 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer (days))
+    local env="$1"
+    local days="$2"
+
+    [[ $env =~ [lpc] && ( $days =~ ^[0-9]{1,2}$ && $days -gt 1 && $days -lt 91 ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <days>\n\n" \
+        && printf "  * days: [1|5|30|45|90]\n\n" \
+        && printf "  NOTE: ...minimum is 1, the max. 90!...\n\n\n" \
+        && return 1
+}
+
 
 
 #2-----------------------------------------------
@@ -1602,6 +1614,82 @@ estail_forcemerge () {
 
 
 #13----------------------------------------------
+# capacity planning functions
+##-----------------------------------------------
+calc_idx_type_avgs_Xdays () {
+    # calc. the avg number of docs & HDD storage used per idx types over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    local DEBUG="off" #[off|on]
+
+    local xDaysAgo="$(calc_date "${days} days ago")"
+    local idxData="$(show_idx_sizes "$env")"
+
+    local idxTypes="$(echo "$idxData" \
+        | awk '{print $1}' \
+        | sed 's/-[0-9]\{4\}.*//' \
+        | sort -u \
+        | grep -vE 'kibana|monitoring|apm|security|index|watcher|tasks|ilm|management|reporting'
+    )"
+
+    printf "\n\n"
+
+    local idxCalculations="$(
+        for idx in $idxTypes; do
+
+            local idxDataWithinCutoff="$(
+                echo "$idxData" \
+                    | grep "$idx" \
+                    | sort -k1,1 \
+                    | awk -v idxCutOff="${idx}-${xDaysAgo}" '$1 > idxCutOff'
+            )"
+
+            [[ $DEBUG == "on" ]] && printf "\n===> [idxType: %s]\n%s\n" "$idx" "$idxDataWithinCutoff"
+
+            # skip if no indexes occur w/in cutoff's range
+            echo "$idxDataWithinCutoff" \
+                | awk -v idx="${idx}" '$1 ~ idx { count++ } END { printf("%d\n"), count }' \
+                | grep -q "^0$" \
+                && continue  
+            
+            # found at least 1 idx for idxType, analyze em
+            {
+             printf "%s\n" "$idx"
+             echo "$idxDataWithinCutoff" \
+                 | awk '$5 == 0 { $5 = 1 } 1' \
+                 | awk '{ total1 += $4; count1++; total2 += $5; count2++ } END \
+                            { printf("%0.0f %0.0f %0.0f %0.0f\n"), \
+                                total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2) }'
+            } | paste - - - -
+        done
+    )"
+
+    [[ $DEBUG == "on" ]] && printf "%s\n" "$idxCalculations" && return 1
+
+    local idxTotals="$(
+        echo "$idxCalculations" \
+                 | awk '{ total2 += $2; total3 += $3; total4 += $4; total5 += $5 } END \
+                            { printf("%0.0f %0.0f %0.0f %0.0f"), total2, total3, total4, total5 }'
+    )"
+
+    printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's]\n" "$days"
+    printf "=====================\n\n"
+    local output="$(
+        printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage\n"
+        printf "=== =============== =================== ===================== =====================\n"
+        echo "$idxCalculations"
+        printf "=== =============== =================== ===================== =====================\n"
+    )"
+
+    printf "%s\n\nTotals: %s\n\n" "$output" "$idxTotals" | column -t
+    printf "\n\n"
+}
+
+
+
+#14----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {

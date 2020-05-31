@@ -212,8 +212,12 @@ del_docs_k8s_ns_range
 forcemerge_to_expunge_deletes
 estail_deletebyquery
 estail_forcemerge
+calc_idx_type_avgs_Xdays
 list_templates
 show_template
+calc_idx_type_avgs_Xdays
+calc_idx_type_avgs_Xdays
+calc_idx_type_avgs_Xdays
 ```
 
 You can also get that list with a short description of each function:
@@ -369,6 +373,11 @@ estail_deletebyquery                          # watch deletebyquery tasks
 estail_forcemerge                             # watch forcemerges in tasks queue
 
 #13----------------------------------------------
+# capacity planning functions
+##-----------------------------------------------
+calc_idx_type_avgs_Xdays                      # calc. the avg number of docs & HDD storage used per idx types over X days
+
+#14----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                # show all template details
