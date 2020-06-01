@@ -1813,20 +1813,25 @@ calc_daily_docs_hdd_overXdays () {
     (
         idxData="$(show_idx_sizes "$env")"
 
-        printf "Date JulianDay TotalShards TotalDocs TotalStorageGBs\n"
-        printf "==== ========= =========== ========= ===============\n"
+        printf "Date JulianDay TotalShards TotalDocs TotalStorageGBs IdxCounts\n"
+        printf "==== ========= =========== ========= =============== =========\n"
 
         for day in $dateRangeInOrder; do
             dayTally="$(
                 echo "$idxData" \
-                    | grep -E "${day}" \
+                    | grep "$day" \
                     | awk '{ total2 += $2; total4 += $4; total5 += $5 } END \
                             { printf("%0.0f %0.0f %0.0f"), total2, total4, total5 }'
             )"
 
+            idxCount="$(
+                echo "$idxData" \
+                    | awk -v day="${day}" '$1 ~ day { count++ } END { printf("%d\n"), count }'
+            )"
+
             # calculate Julian Day for $day
             julianDay=$(julian_day ${day//\./})
-            printf "%s %s %s\n" "$day" "$julianDay" "$dayTally"
+            printf "%s %s %s %s\n" "$day" "$julianDay" "$dayTally" "$idxCount"
             printf "\n"
         done
     ) | column -t
@@ -1842,6 +1847,7 @@ pct_growth_rates_overXdays () {
 
     # https://www.listendata.com/2018/03/regression-analysis.html
 }
+
 
 
 #14----------------------------------------------
