@@ -5,6 +5,7 @@ This repo includes a CLI tool to simplify interacting with the Elasticsearch RES
   - `greadlink`
   -  `gsed`
   -  `gdate`
+  -  `gpaste`
 - ***(Preferred)*** Your credentials are stored in LastPass
 - ***(Preferred)*** You have the LastPass CLI tool installed, `lpass` via `brew`
 - ***(Alternative)*** Use some other method to provide credentials (see ``escli.conf.sample`` for other methods)
@@ -126,6 +127,7 @@ gen_EXAMPLES
 cmp_EXAMPLES
 mk_EXAMPLES
 ceiling_divide
+julian_day
 escli_ls
 escli_lsl
 help_cat
@@ -215,6 +217,9 @@ estail_deletebyquery
 estail_forcemerge
 calc_idx_type_avgs_Xdays
 calc_num_nodes_Xdays
+calc_total_docs_hdd_overXdays
+calc_daily_docs_hdd_overXdays
+pct_growth_rates_overXdays
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -239,6 +244,7 @@ gen_EXAMPLES                                  # generate content of EXAMPLES.md
 cmp_EXAMPLES                                  # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
 mk_EXAMPLES                                   # save new EXAMPLES.md over existing EXAMPLES.md
 ceiling_divide                                # ceiling divide 2 numbers
+julian_day                                    # calculate julian day based on a YYYYmmdd
 
 #1-----------------------------------------------
 # usage funcs
@@ -380,6 +386,9 @@ estail_forcemerge                             # watch forcemerges in tasks queue
 ##-----------------------------------------------
 calc_idx_type_avgs_Xdays                      # calc. the avg number of docs & HDD storage used per idx types over X days
 calc_num_nodes_Xdays                          # calc. the HDD storage required based on idx types usage over X days
+calc_total_docs_hdd_overXdays                 # calc. the total docs & HDD storage used by all indices over X days
+calc_daily_docs_hdd_overXdays                 # calc. the individual daily total docs & HDD storage used by all indices over X days
+pct_growth_rates_overXdays                    # calc. the total docs & HDD storage used by all indices over X days
 
 #14----------------------------------------------
 # template funcs

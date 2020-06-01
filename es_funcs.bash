@@ -28,7 +28,9 @@ filename="es_funcs.bash"
 ### Globals
 #################################################
 # sed
-[ "$(uname)" == 'Darwin' ] && sedCmd=gsed || sedCmd=sed
+[ "$(uname)" == 'Darwin' ] && sedCmd=gsed     || sedCmd=sed
+# gpaste
+[ "$(uname)" == 'Darwin' ] && pasteCmd=gpaste || pasteCmd=paste
 
 #################################################
 ### Functions 
@@ -112,8 +114,32 @@ mk_EXAMPLES () {
 
 ceiling_divide () {
     # ceiling divide 2 numbers
+
+    #TODO USAGE CHK
+
     ceiling_result=$(echo "($1 + $2 - 1)/$2" | bc)
     echo "$ceiling_result"
+}
+
+julian_day () {
+    # calculate julian day based on a YYYYmmdd
+
+    #TODO USAGE CHK
+
+    year="${1:0:4}"
+    month="${1:4:2}"
+    day="$(printf "%g" "${1:6:2}")"
+
+    #DEBUG# echo "$year - $month - $day"
+    julianday=$((day - 32075 + 1461 * (year + 4800 - (14 - month) / 12) / 4 + 367 * \
+            (month - 2 + ((14 - month) / 12) * 12) / 12 - 3 * \
+            ((year + 4900 - (14 - month) / 12) / 100) / 4))
+
+    echo "$julianday"
+
+    # REFS:
+    #  - https://stackoverflow.com/questions/43317428/bash-how-to-get-current-julian-day-number
+    #  - https://en.wikipedia.org/wiki/Julian_day
 }
 
 
@@ -278,7 +304,7 @@ usage_chk10 () {
     local env="$1"
     local days="$2"
 
-    [[ $env =~ [lpc] && ( $days =~ ^[0-9]{1,2}$ && $days -gt 1 && $days -lt 91 ) ]] && return 0 || \
+    [[ $env =~ [lpc] && ( $days =~ ^[0-9]{1,2}$ && $days -gt 0 && $days -lt 91 ) ]] && return 0 || \
         printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <days>\n\n" \
         && printf "  * days: [1|5|30|45|90]\n\n" \
         && printf "  NOTE: ...minimum is 1, the max. 90!...\n\n\n" \
@@ -1133,12 +1159,14 @@ show_idx_doc_sources_all_cnts () {
     printf "Idx: [%s]\n" "$idxArg"
     printf "===================================\n\n"
 
+    #TODO - improve query below 
+    #  - https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html
     ${escmd[$env]} GET ${idxArg}'/_search?pretty' -d \
         '{
           "size": 0,
           "aggs": {
             "hosts": {
-                "terms" : { "field": "host.name",  "size": 500 }
+                "terms" : { "field": "beat.hostname",  "size": 100000000 }
             }
           }
         }' | jq '.aggregations.hosts.buckets | .[]' | paste - - - -  | sed -e 's/[",]//g' | column -t
@@ -1629,8 +1657,8 @@ calc_idx_type_avgs_Xdays () {
 
     local DEBUG="off" #[off|on]
 
-    local xDaysAgo="$(calc_date "${days} days ago")"
     local idxData="$(show_idx_sizes "$env")"
+    local xDaysAgo="$(calc_date "${days} days ago")"
 
     local idxTypes="$(echo "$idxData" \
         | awk '{print $1}' \
@@ -1665,8 +1693,8 @@ calc_idx_type_avgs_Xdays () {
              echo "$idxDataWithinCutoff" \
                  | awk '$5 == 0 { $5 = 1 } 1' \
                  | awk '{ total1 += $4; count1++; total2 += $5; count2++ } END \
-                            { printf("%0.0f %0.0f %0.0f %0.0f\n"), \
-                                total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2) }'
+                            { printf("%0.0f %0.0f %0.0f %0.0f %g\n"), \
+                                total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2), count2 }'
             } | paste - - - -
         done
     )"
@@ -1682,10 +1710,10 @@ calc_idx_type_avgs_Xdays () {
     printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's and represents P shard's usage]\n" "$days"
     printf "=====================\n\n"
     local output="$(
-        printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage\n"
-        printf "=== =============== =================== ===================== =====================\n"
+        printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage IdxCounts\n"
+        printf "=== =============== =================== ===================== ===================== =========\n"
         echo "$idxCalculations"
-        printf "=== =============== =================== ===================== =====================\n"
+        printf "=== =============== =================== ===================== ===================== =========\n"
     )"
 
     printf "%s\n\nTotals: %s\n\n" "$output" "$idxTotals" | column -t
@@ -1717,6 +1745,7 @@ calc_num_nodes_Xdays () {
 
     outputWidth="$(( $(echo "$idxCalculations" | grep '===' | tail -1 | wc -c) - 1 ))"
     printf "%s\n\n" "$(printf '=%.0s' $(seq 1 ${outputWidth}))"
+
     printf "HDD Size (GB):                %s\n" "$stdHDDSize"
     printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
 
@@ -1735,6 +1764,84 @@ calc_num_nodes_Xdays () {
     printf "\n\n\n"
 }
 
+calc_total_docs_hdd_overXdays () {
+    # calc. the total docs & HDD storage used by all indices over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    dateRange=$(for i in $(seq 0 $(($days - 1)) ); do calc_date "$i days ago"; done | $pasteCmd -s -d '|')
+
+    printf "\n\n"
+    printf "Indexes' Primary Shard Analysis (Total)\n"
+    printf "=======================================\n"
+    printf "[DATE RANGE: %s]\n" "$(echo "$dateRange" | awk -F'|' '{print $NF" - "$1}')"
+    printf "=======================================\n\n"
+    
+    (
+        printf "TotalShards TotalDocs TotalStorageGBs\n"
+        printf "=========== ========= ===============\n"
+        show_idx_sizes "$env" \
+            | grep -E "${dateRange}" \
+            | awk '{ total2 += $2; total4 += $4; total5 += $5 } END \
+                    { printf("%0.0f %0.0f %0.0f"), total2, total4, total5 }'
+        printf "\n"
+    ) | column -t
+
+    printf "\n\n"
+}
+
+calc_daily_docs_hdd_overXdays () {
+    # calc. the individual daily total docs & HDD storage used by all indices over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    dateRange=$(for i in $(seq 0 $(($days - 1)) ); do calc_date "$i days ago"; done | $pasteCmd -s -d '|')
+    dateRangeInOrder=$(
+        echo "$dateRange" \
+            | sed 's/\|/ /g' \
+            | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}'
+    )
+
+    printf "\n\n"
+    printf "Indexes' Primmary Shard Analysis (Daily)\n"
+    printf "========================================\n"
+    printf "[DATE RANGE: %s]\n" "$(echo "$dateRange" | awk -F'|' '{print $NF" - "$1}')"
+    printf "========================================\n\n"
+
+    (
+        idxData="$(show_idx_sizes "$env")"
+
+        printf "Date JulianDay TotalShards TotalDocs TotalStorageGBs\n"
+        printf "==== ========= =========== ========= ===============\n"
+
+        for day in $dateRangeInOrder; do
+            dayTally="$(
+                echo "$idxData" \
+                    | grep -E "${day}" \
+                    | awk '{ total2 += $2; total4 += $4; total5 += $5 } END \
+                            { printf("%0.0f %0.0f %0.0f"), total2, total4, total5 }'
+            )"
+
+            # calculate Julian Day for $day
+            julianDay=$(julian_day ${day//\./})
+            printf "%s %s %s\n" "$day" "$julianDay" "$dayTally"
+            printf "\n"
+        done
+    ) | column -t
+
+    printf "\n\n"
+}
+
+pct_growth_rates_overXdays () {
+    # calc. the total docs & HDD storage used by all indices over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    # https://www.listendata.com/2018/03/regression-analysis.html
+}
 
 
 #14----------------------------------------------
