@@ -1869,17 +1869,17 @@ calc_daily_docs_hdd_overXdays () {
     printf "\n\n"
 }
 
-pct_growth_rates_overXdays () {
-    # calc. the total docs & HDD storage used by all indices over X days
-    local env="$1"
-    local days="$2"
-    usage_chk10 "$env" "$days" || return 1
-
-    # https://www.listendata.com/2018/03/regression-analysis.html
-    # http://www.alcula.com/calculators/statistics/linear-regression/
-    # https://manpages.debian.org/jessie/gmt/GMT.1gmt.en.html
-    # https://www.systutorials.com/docs/linux/man/1-gmtregress/
-}
+### pct_growth_rates_overXdays () {
+###     # calc. the total docs & HDD storage used by all indices over X days
+###     local env="$1"
+###     local days="$2"
+###     usage_chk10 "$env" "$days" || return 1
+### 
+###     # https://www.listendata.com/2018/03/regression-analysis.html
+###     # http://www.alcula.com/calculators/statistics/linear-regression/
+###     # https://manpages.debian.org/jessie/gmt/GMT.1gmt.en.html
+###     # https://www.systutorials.com/docs/linux/man/1-gmtregress/
+### }
 
 
 

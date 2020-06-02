@@ -219,7 +219,7 @@ calc_idx_type_avgs_Xdays
 calc_num_nodes_Xdays
 calc_total_docs_hdd_overXdays
 calc_daily_docs_hdd_overXdays
-pct_growth_rates_overXdays
+###
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -388,7 +388,6 @@ calc_idx_type_avgs_Xdays                      # calc. the avg number of docs & H
 calc_num_nodes_Xdays                          # calc. the HDD storage required based on idx types usage over X days
 calc_total_docs_hdd_overXdays                 # calc. the total docs & HDD storage used by all indices over X days
 calc_daily_docs_hdd_overXdays                 # calc. the individual daily total docs & HDD storage used by all indices over X days
-pct_growth_rates_overXdays                    # calc. the total docs & HDD storage used by all indices over X days
 
 #14----------------------------------------------
 # template funcs
