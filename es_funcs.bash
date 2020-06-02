@@ -23,6 +23,10 @@ filename="es_funcs.bash"
 #################################################
 # watch -x bash -c ". es_funcs.bash; show_recovery p"
 
+#################################################
+### References
+#################################################
+# - https://dzone.com/articles/23-useful-elasticsearch-example-queries
 
 #################################################
 ### Globals
@@ -355,7 +359,8 @@ list_nodes_storage () {
     dnodes=$(echo "${output}" | awk '/data|di.*instance/ { print $4 }' | sed 's/.*-00*//' | sort | paste -s -d"," -)
 
     printf "\n%s\n\n"                         "${output}"
-    printf "valid data node suffixes: %s\n\n" "${dnodes}"
+    printf "valid data node suffixes: %s\n"   "${dnodes}"
+    printf "total data nodes: %s\n\n"         "$(echo "$dnodes" | awk -F, '{print NF}')"
 }
 
 list_nodes_zenoss_alarms () {
@@ -1741,24 +1746,49 @@ calc_num_nodes_Xdays () {
 
     local storage2xPerNode="$(bc <<<"scale=2; $storage2x / $nodes2x")"
     local docs2xPerNode="$(bc <<<"scale=2; $docs2x / $nodes2x")"
-    
+    local pctStorageUtilPerNode="$(bc <<<"scale=4; $storage2xPerNode / $stdHDDSize * 100")"
+
+    local nplus1Storage2x="$(bc <<<"scale=2; ($storage2x + 1 * $stdHDDSize)")"
+    local nplus2Storage2x="$(bc <<<"scale=2; ($storage2x + 2 * $stdHDDSize)")"
+    local nplus1Nodes="$(ceiling_divide "$nplus1Storage2x" "$stdHDDSize")"
+    local nplus2Nodes="$(ceiling_divide "$nplus2Storage2x" "$stdHDDSize")"
+    local nplus1PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
+    local nplus2PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
 
     outputWidth="$(( $(echo "$idxCalculations" | grep '===' | tail -1 | wc -c) - 1 ))"
     printf "%s\n\n" "$(printf '=%.0s' $(seq 1 ${outputWidth}))"
 
-    printf "HDD Size (GB):                %s\n" "$stdHDDSize"
+    # HDD
+    printf "HDD Size (GB):                %s\n"     "$stdHDDSize"
     printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
 
-    printf "Number of nodes (P):          %s\t\t\t (%s)\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
-    printf "Number of nodes (P & R):      %s\t\t\t (%s)\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
+    # number of nodes
+    printf "Number of nodes (P):          %s\t\t\t [ %s ]\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
+    printf "Number of nodes (P & R):      %s\t\t\t [ %s ]\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
     printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
 
-    printf "Tot. Agg. storage (P & R):    %s\n" "$storage2x"
-    printf "Tot. Agg. docs (P & R):       %s\n" "$docs2x"
+    # docs/storage totals
+    printf "Tot. Agg. storage (P & R):    %s\n"     "$storage2x"
+    printf "Tot. Agg. docs (P & R):       %s\n"     "$docs2x"
     printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
 
-    printf "Tot. Agg. storage (per node): %s\n" "$storage2xPerNode"
-    printf "Tot. Agg. docs (per node):    %s\n" "$docs2xPerNode"
+    # docs/storage per node
+    printf "Tot. Agg. storage (per node): %.2f\n"   "$storage2xPerNode"
+    printf "Tot. Agg. docs (per node):    %.2f\n"   "$docs2xPerNode"
+    printf "HDD utilization (per node):   %.2f%%\n" "$pctStorageUtilPerNode"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    # N+1/N+2
+    printf "Nodes N+1 (P & R):            %s\n" "$nplus1Nodes"
+    printf "Nodes N+2 (P & R):            %s\n" "$nplus2Nodes"
+
+    printf "HDD util. N+1 (per node):     %.2f%%\t\t\t [ %s ]\n" \
+        "$nplus1PctStorageUtil" \
+        "(($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
+
+    printf "HDD util. N+2 (per node):     %.2f%%\t\t\t [ %s ]\n" \
+        "$nplus2PctStorageUtil" \
+        "(($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
     printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
 
     printf "\n\n\n"
@@ -1846,6 +1876,9 @@ pct_growth_rates_overXdays () {
     usage_chk10 "$env" "$days" || return 1
 
     # https://www.listendata.com/2018/03/regression-analysis.html
+    # http://www.alcula.com/calculators/statistics/linear-regression/
+    # https://manpages.debian.org/jessie/gmt/GMT.1gmt.en.html
+    # https://www.systutorials.com/docs/linux/man/1-gmtregress/
 }
 
 
