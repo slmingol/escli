@@ -215,10 +215,10 @@ del_docs_k8s_ns_range
 forcemerge_to_expunge_deletes
 estail_deletebyquery
 estail_forcemerge
-calc_idx_type_avgs_Xdays
-calc_num_nodes_Xdays
 calc_total_docs_hdd_overXdays
 calc_daily_docs_hdd_overXdays
+calc_idx_type_avgs_overXdays
+calc_num_nodes_overXdays
 ###
 list_templates
 show_template
@@ -384,10 +384,10 @@ estail_forcemerge                             # watch forcemerges in tasks queue
 #13----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
-calc_idx_type_avgs_Xdays                      # calc. the avg number of docs & HDD storage used per idx types over X days
-calc_num_nodes_Xdays                          # calc. the HDD storage required based on idx types usage over X days
 calc_total_docs_hdd_overXdays                 # calc. the total docs & HDD storage used by all indices over X days
 calc_daily_docs_hdd_overXdays                 # calc. the individual daily total docs & HDD storage used by all indices over X days
+calc_idx_type_avgs_overXdays                  # calc. the avg number of docs & HDD storage used per idx types over X days
+calc_num_nodes_overXdays                      # calc. the HDD storage required based on idx types usage over X days
 
 #14----------------------------------------------
 # template funcs

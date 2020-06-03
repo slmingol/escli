@@ -127,15 +127,16 @@ ceiling_divide () {
 
 julian_day () {
     # calculate julian day based on a YYYYmmdd
+    #[[ $1 =~ [0-9]{8} ]] && return 0 || \
+    #    printf "\nUSAGE: ${FUNCNAME[1]} YYYYmmdd\n\n" \
+    #    && return 1
 
-    #TODO USAGE CHK
-
-    year="${1:0:4}"
-    month="${1:4:2}"
-    day="$(printf "%g" "${1:6:2}")"
+    local year="${1:0:4}"
+    local month="${1:4:2}"
+    local day="$(printf "%g" "${1:6:2}")"
 
     #DEBUG# echo "$year - $month - $day"
-    julianday=$((day - 32075 + 1461 * (year + 4800 - (14 - month) / 12) / 4 + 367 * \
+    local julianday=$((day - 32075 + 1461 * (year + 4800 - (14 - month) / 12) / 4 + 367 * \
             (month - 2 + ((14 - month) / 12) * 12) / 12 - 3 * \
             ((year + 4900 - (14 - month) / 12) / 100) / 4))
 
@@ -1654,146 +1655,6 @@ estail_forcemerge () {
 #13----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
-calc_idx_type_avgs_Xdays () {
-    # calc. the avg number of docs & HDD storage used per idx types over X days
-    local env="$1"
-    local days="$2"
-    usage_chk10 "$env" "$days" || return 1
-
-    local DEBUG="off" #[off|on]
-
-    local idxData="$(show_idx_sizes "$env")"
-    local xDaysAgo="$(calc_date "${days} days ago")"
-
-    local idxTypes="$(echo "$idxData" \
-        | awk '{print $1}' \
-        | sed 's/-[0-9]\{4\}.*//' \
-        | sort -u \
-        | grep -vE 'kibana|monitoring|apm|security|index|watcher|tasks|ilm|management|reporting'
-    )"
-
-    printf "\n\n"
-
-    local idxCalculations="$(
-        for idx in $idxTypes; do
-
-            local idxDataWithinCutoff="$(
-                echo "$idxData" \
-                    | grep "$idx" \
-                    | sort -k1,1 \
-                    | awk -v idxCutOff="${idx}-${xDaysAgo}" '$1 > idxCutOff'
-            )"
-
-            [[ $DEBUG == "on" ]] && printf "\n===> [idxType: %s]\n%s\n" "$idx" "$idxDataWithinCutoff"
-
-            # skip if no indexes occur w/in cutoff's range
-            echo "$idxDataWithinCutoff" \
-                | awk -v idx="${idx}" '$1 ~ idx { count++ } END { printf("%d\n"), count }' \
-                | grep -q "^0$" \
-                && continue  
-            
-            # found at least 1 idx for idxType, analyze em
-            {
-             printf "%s\n" "$idx"
-             echo "$idxDataWithinCutoff" \
-                 | awk '$5 == 0 { $5 = 1 } 1' \
-                 | awk '{ total1 += $4; count1++; total2 += $5; count2++ } END \
-                            { printf("%0.0f %0.0f %0.0f %0.0f %g\n"), \
-                                total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2), count2 }'
-            } | paste - - - -
-        done
-    )"
-
-    [[ $DEBUG == "on" ]] && printf "%s\n" "$idxCalculations" && return 1
-
-    local idxTotals="$(
-        echo "$idxCalculations" \
-                 | awk '{ total2 += $2; total3 += $3; total4 += $4; total5 += $5 } END \
-                            { printf("%0.0f %0.0f %0.0f %0.0f"), total2, total3, total4, total5 }'
-    )"
-
-    printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's and represents P shard's usage]\n" "$days"
-    printf "=====================\n\n"
-    local output="$(
-        printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage IdxCounts\n"
-        printf "=== =============== =================== ===================== ===================== =========\n"
-        echo "$idxCalculations"
-        printf "=== =============== =================== ===================== ===================== =========\n"
-    )"
-
-    printf "%s\n\nTotals: %s\n\n" "$output" "$idxTotals" | column -t
-    printf "\n\n"
-}
-
-calc_num_nodes_Xdays () {
-    # calc. the HDD storage required based on idx types usage over X days
-    local env="$1"
-    local days="$2"
-    usage_chk10 "$env" "$days" || return 1
-
-    local stdHDDSize="7600"
-    
-    idxCalculations="$(calc_idx_type_avgs_Xdays "$env" "$days")"
-    sixtyDayDocs="$(echo "$idxCalculations" | awk '/Totals:/ { print $4 }')"
-    sixtyDayStorage="$(echo "$idxCalculations" | awk '/Totals:/ { print $5 }')"
-    printf "%s\n\n\n" "$idxCalculations" 
-
-    local nodes="$(ceiling_divide "$sixtyDayStorage" "$stdHDDSize")"
-    local nodes2x="$(bc <<<"2 * $nodes")"
-
-    local storage2x="$(bc <<<"2 * $sixtyDayStorage")"
-    local docs2x="$(bc <<<"2 * $sixtyDayDocs")"
-
-    local storage2xPerNode="$(bc <<<"scale=2; $storage2x / $nodes2x")"
-    local docs2xPerNode="$(bc <<<"scale=2; $docs2x / $nodes2x")"
-    local pctStorageUtilPerNode="$(bc <<<"scale=4; $storage2xPerNode / $stdHDDSize * 100")"
-
-    local nplus1Storage2x="$(bc <<<"scale=2; ($storage2x + 1 * $stdHDDSize)")"
-    local nplus2Storage2x="$(bc <<<"scale=2; ($storage2x + 2 * $stdHDDSize)")"
-    local nplus1Nodes="$(ceiling_divide "$nplus1Storage2x" "$stdHDDSize")"
-    local nplus2Nodes="$(ceiling_divide "$nplus2Storage2x" "$stdHDDSize")"
-    local nplus1PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
-    local nplus2PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
-
-    outputWidth="$(( $(echo "$idxCalculations" | grep '===' | tail -1 | wc -c) - 1 ))"
-    printf "%s\n\n" "$(printf '=%.0s' $(seq 1 ${outputWidth}))"
-
-    # HDD
-    printf "HDD Size (GB):                %s\n"     "$stdHDDSize"
-    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
-
-    # number of nodes
-    printf "Number of nodes (P):          %s\t\t\t [ %s ]\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
-    printf "Number of nodes (P & R):      %s\t\t\t [ %s ]\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
-    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
-
-    # docs/storage totals
-    printf "Tot. Agg. storage (P & R):    %s\n"     "$storage2x"
-    printf "Tot. Agg. docs (P & R):       %s\n"     "$docs2x"
-    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
-
-    # docs/storage per node
-    printf "Tot. Agg. storage (per node): %.2f\n"   "$storage2xPerNode"
-    printf "Tot. Agg. docs (per node):    %.2f\n"   "$docs2xPerNode"
-    printf "HDD utilization (per node):   %.2f%%\n" "$pctStorageUtilPerNode"
-    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
-
-    # N+1/N+2
-    printf "Nodes N+1 (P & R):            %s\n" "$nplus1Nodes"
-    printf "Nodes N+2 (P & R):            %s\n" "$nplus2Nodes"
-
-    printf "HDD util. N+1 (per node):     %.2f%%\t\t\t [ %s ]\n" \
-        "$nplus1PctStorageUtil" \
-        "(($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
-
-    printf "HDD util. N+2 (per node):     %.2f%%\t\t\t [ %s ]\n" \
-        "$nplus2PctStorageUtil" \
-        "(($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
-    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
-
-    printf "\n\n\n"
-}
-
 calc_total_docs_hdd_overXdays () {
     # calc. the total docs & HDD storage used by all indices over X days
     local env="$1"
@@ -1867,6 +1728,146 @@ calc_daily_docs_hdd_overXdays () {
     ) | column -t
 
     printf "\n\n"
+}
+
+calc_idx_type_avgs_overXdays () {
+    # calc. the avg number of docs & HDD storage used per idx types over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    local DEBUG="off" #[off|on]
+
+    local idxData="$(show_idx_sizes "$env")"
+    local xDaysAgo="$(calc_date "${days} days ago")"
+
+    local idxTypes="$(echo "$idxData" \
+        | awk '{print $1}' \
+        | sed 's/-[0-9]\{4\}.*//' \
+        | sort -u \
+        | grep -vE 'kibana|monitoring|apm|security|index|watcher|tasks|ilm|management|reporting'
+    )"
+
+    printf "\n\n"
+
+    local idxCalculations="$(
+        for idx in $idxTypes; do
+
+            local idxDataWithinCutoff="$(
+                echo "$idxData" \
+                    | grep "$idx" \
+                    | sort -k1,1 \
+                    | awk -v idxCutOff="${idx}-${xDaysAgo}" '$1 > idxCutOff'
+            )"
+
+            [[ $DEBUG == "on" ]] && printf "\n===> [idxType: %s]\n%s\n" "$idx" "$idxDataWithinCutoff"
+
+            # skip if no indexes occur w/in cutoff's range
+            echo "$idxDataWithinCutoff" \
+                | awk -v idx="${idx}" '$1 ~ idx { count++ } END { printf("%d\n"), count }' \
+                | grep -q "^0$" \
+                && continue  
+            
+            # found at least 1 idx for idxType, analyze em
+            {
+             printf "%s\n" "$idx"
+             echo "$idxDataWithinCutoff" \
+                 | awk '$5 == 0 { $5 = 1 } 1' \
+                 | awk '{ total1 += $4; count1++; total2 += $5; count2++ } END \
+                            { printf("%0.0f %0.0f %0.0f %0.0f %g\n"), \
+                                total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2), count2 }'
+            } | paste - - - -
+        done
+    )"
+
+    [[ $DEBUG == "on" ]] && printf "%s\n" "$idxCalculations" && return 1
+
+    local idxTotals="$(
+        echo "$idxCalculations" \
+                 | awk '{ total2 += $2; total3 += $3; total4 += $4; total5 += $5 } END \
+                            { printf("%0.0f %0.0f %0.0f %0.0f"), total2, total3, total4, total5 }'
+    )"
+
+    printf "last ~%s day averages \t----\t [NOTE: Storage is in GB's and represents P shard's usage]\n" "$days"
+    printf "=====================\n\n"
+    local output="$(
+        printf "Idx AvgNumDocsDaily AvgStorageUsedDaily 60DayProjectedNumDocs 60DayProjectedStorage IdxCounts\n"
+        printf "=== =============== =================== ===================== ===================== =========\n"
+        echo "$idxCalculations"
+        printf "=== =============== =================== ===================== ===================== =========\n"
+    )"
+
+    printf "%s\n\nTotals: %s\n\n" "$output" "$idxTotals" | column -t
+    printf "\n\n"
+}
+
+calc_num_nodes_overXdays () {
+    # calc. the HDD storage required based on idx types usage over X days
+    local env="$1"
+    local days="$2"
+    usage_chk10 "$env" "$days" || return 1
+
+    local stdHDDSize="7600"
+    
+    idxCalculations="$(calc_idx_type_avgs_overXdays "$env" "$days")"
+    sixtyDayDocs="$(echo "$idxCalculations" | awk '/Totals:/ { print $4 }')"
+    sixtyDayStorage="$(echo "$idxCalculations" | awk '/Totals:/ { print $5 }')"
+    printf "%s\n\n\n" "$idxCalculations" 
+
+    local nodes="$(ceiling_divide "$sixtyDayStorage" "$stdHDDSize")"
+    local nodes2x="$(bc <<<"2 * $nodes")"
+
+    local storage2x="$(bc <<<"2 * $sixtyDayStorage")"
+    local docs2x="$(bc <<<"2 * $sixtyDayDocs")"
+
+    local storage2xPerNode="$(bc <<<"scale=2; $storage2x / $nodes2x")"
+    local docs2xPerNode="$(bc <<<"scale=2; $docs2x / $nodes2x")"
+    local pctStorageUtilPerNode="$(bc <<<"scale=4; $storage2xPerNode / $stdHDDSize * 100")"
+
+    local nplus1Storage2x="$(bc <<<"scale=2; ($storage2x + 1 * $stdHDDSize)")"
+    local nplus2Storage2x="$(bc <<<"scale=2; ($storage2x + 2 * $stdHDDSize)")"
+    local nplus1Nodes="$(ceiling_divide "$nplus1Storage2x" "$stdHDDSize")"
+    local nplus2Nodes="$(ceiling_divide "$nplus2Storage2x" "$stdHDDSize")"
+    local nplus1PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
+    local nplus2PctStorageUtil="$(bc <<<"scale=4; (($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100")"
+
+    outputWidth="$(( $(echo "$idxCalculations" | grep '===' | tail -1 | wc -c) - 1 ))"
+    printf "%s\n\n" "$(printf '=%.0s' $(seq 1 ${outputWidth}))"
+
+    # HDD
+    printf "HDD Size (GB):                %s\n"     "$stdHDDSize"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    # number of nodes
+    printf "Number of nodes (P):          %s\t\t\t [ %s ]\n" "$nodes"   "$sixtyDayStorage / $stdHDDSize"
+    printf "Number of nodes (P & R):      %s\t\t\t [ %s ]\n" "$nodes2x" "2 * ($sixtyDayStorage / $stdHDDSize)"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    # docs/storage totals
+    printf "Tot. Agg. storage (P & R):    %s\n"     "$storage2x"
+    printf "Tot. Agg. docs (P & R):       %s\n"     "$docs2x"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    # docs/storage per node
+    printf "Tot. Agg. storage (per node): %.2f\n"   "$storage2xPerNode"
+    printf "Tot. Agg. docs (per node):    %.2f\n"   "$docs2xPerNode"
+    printf "HDD utilization (per node):   %.2f%%\n" "$pctStorageUtilPerNode"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    # N+1/N+2
+    printf "Nodes N+1 (P & R):            %s\n" "$nplus1Nodes"
+    printf "Nodes N+2 (P & R):            %s\n" "$nplus2Nodes"
+
+    printf "HDD util. N+1 (per node):     %.2f%%\t\t\t [ %s ]\n" \
+        "$nplus1PctStorageUtil" \
+        "(($storage2x - 1 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
+
+    printf "HDD util. N+2 (per node):     %.2f%%\t\t\t [ %s ]\n" \
+        "$nplus2PctStorageUtil" \
+        "(($storage2x - 2 * $stdHDDSize) / ($nodes2x * $stdHDDSize)) * 100"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 $(( ${outputWidth} - 30 )) ))"
+
+    printf "\n\n\n"
 }
 
 ### pct_growth_rates_overXdays () {
