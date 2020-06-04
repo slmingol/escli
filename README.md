@@ -117,17 +117,17 @@ $
 This is a list of the functions it provides:
 ```
 $ escli_ls
-calc_date
-calc_date_1daybefore
-calc_date_1dayafter
 gen_README
 cmp_README
 mk_README
 gen_EXAMPLES
 cmp_EXAMPLES
 mk_EXAMPLES
-ceiling_divide
+calc_date
+calc_date_1daybefore
+calc_date_1dayafter
 julian_day
+ceiling_divide
 escli_ls
 escli_lsl
 help_cat
@@ -234,31 +234,35 @@ $ escli_lsl
 #0-----------------------------------------------
 # helper funcs
 ##-----------------------------------------------
-calc_date                                     # print UTC date X "days | days ago"
-calc_date_1daybefore                          # print UTC date X 1 day before given date (YYYY-mm-dd)
-calc_date_1dayafter                           # print UTC date X 1 day after given date (YYYY-mm-dd)
 gen_README                                    # generate contents of README.md
 cmp_README                                    # sdiff new README.md vs. existing README.md
 mk_README                                     # save new README.md over existing README.md
 gen_EXAMPLES                                  # generate content of EXAMPLES.md
 cmp_EXAMPLES                                  # sdiff new EXAMPLES.md vs. existing EXAMPLES.md
 mk_EXAMPLES                                   # save new EXAMPLES.md over existing EXAMPLES.md
-ceiling_divide                                # ceiling divide 2 numbers
-julian_day                                    # calculate julian day based on a YYYYmmdd
 
 #1-----------------------------------------------
+# date & math funcs
+##-----------------------------------------------
+calc_date                                     # print UTC date X "days | days ago"
+calc_date_1daybefore                          # print UTC date 1 day before given date (YYYY-mm-dd)
+calc_date_1dayafter                           # print UTC date 1 day after given date (YYYY-mm-dd)
+julian_day                                    # calculate julian day based on a YYYYmmdd
+ceiling_divide                                # ceiling divide 2 numbers
+
+#2-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
 escli_ls                                      # list function names
 escli_lsl                                     # list function names + desc.
 
-#2-----------------------------------------------
+#3-----------------------------------------------
 # help funcs
 ##-----------------------------------------------
 help_cat                                      # print help for _cat API call
 help_indices                                  # print help for _cat/indices API call
 
-#3-----------------------------------------------
+#4-----------------------------------------------
 # node funcs
 ##-----------------------------------------------
 list_nodes                                    # list ES nodes along w/ a list of data node suffixes for use by other cmds.
@@ -269,7 +273,7 @@ show_nodes_circuit-breaker_summary            # list ES nodes circuit breaker tr
 show_nodes_circuit-breaker_details            # list ES nodes circuit breaker details
 show_nodes_threadpools                        # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
 
-#4-----------------------------------------------
+#5-----------------------------------------------
 # shard mgmt funcs
 ##-----------------------------------------------
 show_shards                                   # list all the index shards sorted by size (big->small)
@@ -285,7 +289,7 @@ show_shards_biggerthan50gb                    # show shards which are > 50GB (to
 show_idx_with_oversized_shards_summary        # show summary of indexes w/ shards > 50GB (too big)
 show_idx_with_oversized_shards_details        # show detailed view of indexes w/ shards > 50GB (too big)
 
-#5-----------------------------------------------
+#6-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle                         # show routing allocations for balancing & recoveries (current)
@@ -294,7 +298,7 @@ increase_balance_throttle_XXXmb               # increase bytes_per_sec routing a
 reset_balance_throttle                        # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold                   # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
-#6-----------------------------------------------
+#7-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery                                 # show a summary of recovery queue
@@ -310,7 +314,7 @@ set_idx_default_field                         # set index.query.default_field =>
 set_tmplate_default_field                     # set template index.query.default_field => [ "*" ]
 set_idx_num_replicas_to_X                     # set an index's number_of_replicas to X
 
-#7-----------------------------------------------
+#8-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop                                         # mimics `top` command, watching ES nodes CPU/MEM usage
@@ -333,7 +337,7 @@ show_idx_doc_sources_1st_10k                  # show the hostnames that sent doc
 show_idx_doc_sources_all_cnts                 # show the total num. docs each hostname sent to an index
 show_idx_doc_sources_all_k8sns_cnts           # show the total num. docs each namespace sent to an index
 
-#8-----------------------------------------------
+#9-----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx                    # show number of shards configured per index template
@@ -345,7 +349,7 @@ enable_shard_allocations                      # allow the allocator to route sha
 disable_shard_allocations                     # disallow the allocator to route shards (cluster.routing.allocation.enable)
 clear_shard_allocations                       # clear the allocator to route shards (cluster.routing.allocation.enable)
 
-#9-----------------------------------------------
+#10----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes                                # show index sizes sorted (big -> small)
@@ -355,14 +359,14 @@ showcfg_idx_cfgs                              # show all '<index name>/_settings
 showcfg_idx_stats                             # show all '<index name>/_stats'
 show_idx_version_cnts                         # show index sizes sorted (big -> small)
 
-#10----------------------------------------------
+#11----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes                           # show excluded nodes from cluster
 exclude_node_name                             # exclude a node from cluster (node suffix)
 clear_excluded_nodes                          # clear any excluded cluster nodes
 
-#11----------------------------------------------
+#12----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami                                      # show auth info about who am i
@@ -373,7 +377,7 @@ list_auth_rolemappings                        # list all rolemappings
 evict_auth_cred_cache                         # evict/clear users from the user cache
 create_bearer_token                           # create bearer token for user
 
-#12----------------------------------------------
+#13----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range                         # delete k8s namespace docs over a specific time range
@@ -381,7 +385,7 @@ forcemerge_to_expunge_deletes                 # force merge of shards to expunge
 estail_deletebyquery                          # watch deletebyquery tasks
 estail_forcemerge                             # watch forcemerges in tasks queue
 
-#13----------------------------------------------
+#14----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays                 # calc. the total docs & HDD storage used by all indices over X days
@@ -389,7 +393,7 @@ calc_daily_docs_hdd_overXdays                 # calc. the individual daily total
 calc_idx_type_avgs_overXdays                  # calc. the avg number of docs & HDD storage used per idx types over X days
 calc_num_nodes_overXdays                      # calc. the HDD storage required based on idx types usage over X days
 
-#14----------------------------------------------
+#15----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                # show all template details

@@ -31,10 +31,13 @@ filename="es_funcs.bash"
 #################################################
 ### Globals
 #################################################
+uname="$(uname)"
 # sed
-[ "$(uname)" == 'Darwin' ] && sedCmd=gsed     || sedCmd=sed
+[ "$uname" == 'Darwin' ] && sedCmd=gsed     || sedCmd=sed
 # gpaste
-[ "$(uname)" == 'Darwin' ] && pasteCmd=gpaste || pasteCmd=paste
+[ "$uname" == 'Darwin' ] && pasteCmd=gpaste || pasteCmd=paste
+# gdate
+[ "$uname" == 'Darwin' ] && dateCmd=gdate   || dateCmd=date
 
 #################################################
 ### Functions 
@@ -43,39 +46,6 @@ filename="es_funcs.bash"
 #0-----------------------------------------------
 # helper funcs
 ##-----------------------------------------------
-calc_date () {
-    # print UTC date X "days | days ago"
-    local english_days="$1"
-
-    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
-    [[ $english_days != *days* ]] && \
-        printf "\nUSAGE: ${FUNCNAME[1]} [X days ago | X days]\n\n" && return 1
-
-    ${dateCmd} -u --date="$english_days" +%Y.%m.%d
-}
-
-calc_date_1daybefore () {
-    # print UTC date X 1 day before given date (YYYY-mm-dd)
-    local date="$1"
-
-    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
-    [[ ! $date =~ [0-9]{4}-[0-9]+-[0-9]+ ]] && \
-        printf "\nUSAGE: ${FUNCNAME[1]} [YYYY-mm-dd]\n\n" && return 1
-
-    ${dateCmd} -u --date="$date -1 days" +%Y.%m.%d
-}
-
-calc_date_1dayafter () {
-    # print UTC date X 1 day after given date (YYYY-mm-dd)
-    local date="$1"
-
-    [ "$(uname)" == 'Darwin' ] && dateCmd=gdate || dateCmd=date
-    [[ ! $date =~ [0-9]{4}-[0-9]+-[0-9]+ ]] && \
-        printf "\nUSAGE: ${FUNCNAME[1]} [YYYY-mm-dd]\n\n" && return 1
-
-    ${dateCmd} -u --date="$date +1 days" +%Y.%m.%d
-}
-
 gen_README () {
     # generate contents of README.md
     cat \
@@ -116,20 +86,58 @@ mk_EXAMPLES () {
     rm -f EXAMPLES.md.new
 }
 
-ceiling_divide () {
-    # ceiling divide 2 numbers
 
-    #TODO USAGE CHK
 
-    ceiling_result=$(echo "($1 + $2 - 1)/$2" | bc)
-    echo "$ceiling_result"
+#1-----------------------------------------------
+# date & math funcs
+##-----------------------------------------------
+calc_date () {
+    # print UTC date X "days | days ago"
+    local english_days="$1"
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ $english_days != *days* ]] \
+        && printf "\nUSAGE: ${caller} [ 'X days ago' | 'X days' ]\n\n" \
+        && return 1
+
+    ${dateCmd} -u --date="$english_days" +%Y.%m.%d
+}
+
+calc_date_1daybefore () {
+    # print UTC date 1 day before given date (YYYY-mm-dd)
+    local date="$1"
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ ! $date =~ [0-9]{4}-[0-9]{2}-[0-9]{2} ]] \
+        && printf "\nUSAGE: ${caller} [YYYY-mm-dd]\n\n" \
+        && return 1
+
+    ${dateCmd} -u --date="$date -1 days" +%Y.%m.%d
+}
+
+calc_date_1dayafter () {
+    # print UTC date 1 day after given date (YYYY-mm-dd)
+    local date="$1"
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ ! $date =~ [0-9]{4}-[0-9]{2}-[0-9]{2} ]] \
+        && printf "\nUSAGE: ${caller} [YYYY-mm-dd]\n\n" \
+        && return 1
+
+    ${dateCmd} -u --date="$date +1 days" +%Y.%m.%d
 }
 
 julian_day () {
     # calculate julian day based on a YYYYmmdd
-    #[[ $1 =~ [0-9]{8} ]] && return 0 || \
-    #    printf "\nUSAGE: ${FUNCNAME[1]} YYYYmmdd\n\n" \
-    #    && return 1
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ ! $1 =~ [0-9]{8} ]] \
+        && printf "\nUSAGE: ${caller} YYYYmmdd\n\n" \
+        && return 1
 
     local year="${1:0:4}"
     local month="${1:4:2}"
@@ -147,8 +155,22 @@ julian_day () {
     #  - https://en.wikipedia.org/wiki/Julian_day
 }
 
+ceiling_divide () {
+    # ceiling divide 2 numbers
 
-#1-----------------------------------------------
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ ! $1 =~ [0-9]{1,} ]] && [[ ! $2 =~ [0-9]{1,} ]] \
+        && printf "\nUSAGE: ${caller} <numerator> <denominator>\n\n" \
+        && return 1
+
+    ceiling_result=$(echo "($1 + $2 - 1)/$2" | bc)
+    echo "$ceiling_result"
+}
+
+
+
+#2-----------------------------------------------
 # usage funcs
 ##-----------------------------------------------
 escli_ls () {
@@ -318,7 +340,7 @@ usage_chk10 () {
 
 
 
-#2-----------------------------------------------
+#3-----------------------------------------------
 # help funcs
 ##-----------------------------------------------
 help_cat () {
@@ -337,7 +359,7 @@ help_indices () {
 
 
 
-#3-----------------------------------------------
+#4-----------------------------------------------
 # node funcs
 ##-----------------------------------------------
 list_nodes () {
@@ -463,7 +485,7 @@ show_nodes_threadpools () {
 
 
 
-#4-----------------------------------------------
+#5-----------------------------------------------
 # shard mgmt funcs
 ##-----------------------------------------------
 show_shards () {
@@ -698,7 +720,7 @@ show_idx_with_oversized_shards_details () {
 
 
 
-#5-----------------------------------------------
+#6-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle () {
@@ -787,7 +809,7 @@ change_allocation_threshold () {
 
 
 
-#6-----------------------------------------------
+#7-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery () {
@@ -974,7 +996,7 @@ set_idx_num_replicas_to_X () {
 
 
 
-#7-----------------------------------------------
+#8-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop () {
@@ -1250,7 +1272,7 @@ show_idx_doc_sources_all_k8sns_cnts () {
 
 
 
-#8-----------------------------------------------
+#9-----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx () {
@@ -1389,7 +1411,7 @@ clear_shard_allocations () {
 
 
 
-#9-----------------------------------------------
+#10----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes () {
@@ -1446,7 +1468,7 @@ show_idx_version_cnts () {
 
 
 
-#10----------------------------------------------
+#11----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes () {
@@ -1497,7 +1519,7 @@ clear_excluded_nodes () {
 
 
 
-#11----------------------------------------------
+#12----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -1560,7 +1582,7 @@ create_bearer_token () {
 
 
 
-#12----------------------------------------------
+#13----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range () {
@@ -1652,7 +1674,7 @@ estail_forcemerge () {
 
 
 
-#13----------------------------------------------
+#14----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays () {
@@ -1884,7 +1906,7 @@ calc_num_nodes_overXdays () {
 
 
 
-#14----------------------------------------------
+#15----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {
