@@ -1066,8 +1066,8 @@ show_watermarks () {
     cat <<-EOM
 
 
-    Disk-based shard allocation ssettings
-    -------------------------------------
+    Disk-based shard allocation settings
+    ------------------------------------
     Elasticsearch considers the available disk space on a node before deciding whether to allocate new shards to 
     that node or to actively relocate shards away from that node.
     -------------------------------------------------------------------------------------------------------------
