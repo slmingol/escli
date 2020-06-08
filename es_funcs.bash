@@ -104,6 +104,19 @@ calc_date () {
     ${dateCmd} -u --date="$english_days" +%Y.%m.%d
 }
 
+calc_hour () {
+    # print UTC date X "hours | hours ago"
+    local english_hours="$1"
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ $english_hours != *hours* ]] \
+        && printf "\nUSAGE: ${caller} [ 'X hours ago' | 'X hours' ]\n\n" \
+        && return 1
+
+    ${dateCmd} --utc --iso-8601=sec --date="$english_hours"
+}
+
 calc_date_1daybefore () {
     # print UTC date 1 day before given date (YYYY-mm-dd)
     local date="$1"
@@ -1049,6 +1062,48 @@ show_watermarks () {
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cluster/settings?pretty&flat_settings=true&include_defaults=true' | grep watermark
+
+    cat <<-EOM
+
+
+    Disk-based shard allocation ssettings
+    -------------------------------------
+    Elasticsearch considers the available disk space on a node before deciding whether to allocate new shards to 
+    that node or to actively relocate shards away from that node.
+    -------------------------------------------------------------------------------------------------------------
+      * cluster.routing.allocation.disk.watermark.low
+                Controls the low watermark for disk usage. It defaults to 85%, meaning that Elasticsearch 
+                will not allocate shards to nodes that have more than 85% disk used. It can also be set to 
+                an absolute byte value (like 500mb) to prevent Elasticsearch from allocating shards if 
+                less than the specified amount of space is available. This setting has no effect on the 
+                primary shards of newly-created indices but will prevent their replicas from being allocated.
+    -------------------------------------------------------------------------------------------------------------
+      * cluster.routing.allocation.disk.watermark.high
+                Controls the high watermark. It defaults to 90%, meaning that Elasticsearch will attempt to 
+                relocate shards away from a node whose disk usage is above 90%. It can also be set to an 
+                absolute byte value (similarly to the low watermark) to relocate shards away from a node if 
+                it has less than the specified amount of free space. This setting affects the allocation of 
+                all shards, whether previously allocated or not.
+    -------------------------------------------------------------------------------------------------------------
+      * cluster.routing.allocation.disk.watermark.flood_stage
+                Controls the flood stage watermark, which defaults to 95%. Elasticsearch enforces a read-only 
+                index block (index.blocks.read_only_allow_delete) on every index that has one or more 
+                shards allocated on the node, and that has at least one disk exceeding the flood stage. 
+                This setting is a last resort to prevent nodes from running out of disk space. The index 
+                block is automatically released when the disk utilization falls below the high watermark.
+    -------------------------------------------------------------------------------------------------------------
+      *NOTE*
+                You cannot mix the usage of percentage values and byte values within these settings. Either 
+                all values are set to percentage values, or all are set to byte values. This enforcement is so 
+                that Elasticsearch can validate that the settings are internally consistent, ensuring that the 
+                low disk threshold is less than the high disk threshold, and the high disk threshold is less 
+                than the flood stage threshold.
+    -------------------------------------------------------------------------------------------------------------
+
+    Source: https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html#disk-based-shard-allocation
+
+
+	EOM
 }
 
 show_state () {
@@ -1253,7 +1308,7 @@ show_idx_doc_sources_all_k8sns_cnts () {
 		          "daily_buckets": {
 		            "date_histogram": {
 		              "field": "@timestamp",
-		              "calendar_interval": "day"
+		              "calendar_interval": "1d"
 		            }
 		          }
 		        }
@@ -1267,6 +1322,57 @@ show_idx_doc_sources_all_k8sns_cnts () {
         | jq '.aggregations.k8sns.buckets[] | .key, .daily_buckets.buckets[].key_as_string, .daily_buckets.buckets[].doc_count' \
         | paste - - -  \
         | column -t
+    printf "\n\n"
+}
+
+show_idx_doc_sources_all_k8sns_cnts_hourly () {
+    # show the total num. docs each namespace sent to an index
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    printf "\n\n"
+    printf "k8s document sources (counts - hourly)\n"
+    printf "======================================\n\n"
+
+    SEARCHQUERY=$(cat <<-EOM
+		{
+		  "size": 0,
+		  "query" : {
+		    "range": {
+		      "@timestamp": {
+                "gte": "$(calc_hour '3 hours ago')",
+                "lte": "$(calc_hour '0 hours ago')"
+		      }
+		    }
+		  },
+		  "aggs": {
+		    "k8sns": {
+		        "terms" : { "field": "kubernetes.namespace",  "size": 10 },
+		        "aggs": {
+		          "hourly_buckets": {
+		            "date_histogram": {
+		              "field": "@timestamp",
+		              "calendar_interval": "1h"
+		            }
+		          }
+		        }
+		    }
+		  }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} GET ${idxArg}'/_search?pretty' -d "$SEARCHQUERY")
+    echo "$cmdOutput" \
+        | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[] | .' \
+        | grep -v '"key"' \
+        | paste - - - - - - - - - - - - - - - - \
+        | gsed 's/[ \t]\+[{}]\+[ \t]\+/ /g' \
+        | gsed 's/[ \t]\+[}{]\+[ \t]\+/ /g' #\
+        #| column -t
+    #    | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[].key_as_string, .hourly_buckets.buckets[].doc_count' \
+    #    | paste - - -  \
+    #    | column -t
     printf "\n\n"
 }
 
@@ -2411,3 +2517,512 @@ show_template () {
 # 
 # filebeat-6.5.1-2020.05.28         1     rdu-es-data-01g            12.5m         418                2.6d            128744579              1.4d        29551         3.8h         17717                9m              17650
 # filebeat-6.5.1-2020.05.28         0     rdu-es-data-01m             7.5m         408                1.3d            128775519              1.2d        34021         1.8h         19332              6.4m               3739
+
+### flush thresholds
+# - https://aws.amazon.com/premiumsupport/knowledge-center/elasticsearch-indexing-performance/
+#
+#  $ ./esp GET 'filebeat-6.5.1-2020.06.04/_stats/flush?pretty'
+#  {
+#    "_shards" : {
+#      "total" : 30,
+#      "successful" : 30,
+#      "failed" : 0
+#    },
+#    "_all" : {
+#      "primaries" : {
+#        "flush" : {
+#          "total" : 4206,
+#          "periodic" : 4197,
+#          "total_time_in_millis" : 3817920
+#        }
+#      },
+#      "total" : {
+#        "flush" : {
+#          "total" : 8466,
+#          "periodic" : 8442,
+#          "total_time_in_millis" : 7639364
+#        }
+#      }
+#    },
+#    "indices" : {
+#      "filebeat-6.5.1-2020.06.04" : {
+#        "uuid" : "DIOyGDrfQ_SGGAhFFHF9sA",
+#        "primaries" : {
+#          "flush" : {
+#            "total" : 4206,
+#            "periodic" : 4197,
+#            "total_time_in_millis" : 3817920
+#          }
+#        },
+#        "total" : {
+#          "flush" : {
+#            "total" : 8466,
+#            "periodic" : 8442,
+#            "total_time_in_millis" : 7639364
+#          }
+#        }
+#      }
+#    }
+#  }
+#
+#
+#  $ ./esp GET 'filebeat-6.5.1-2020.06.04/_stats/flush?pretty' | jq -s '.[][] | .primaries, .total' | grep -vE 'null|^[0-9]' | paste - - - - - - -
+#  {	  "flush": {	    "total": 4288,	    "periodic": 4279,	    "total_time_in_millis": 3905137	  }	}
+#  {	  "flush": {	    "total": 8632,	    "periodic": 8608,	    "total_time_in_millis": 7815368	  }	}
+#  
+#  [2020-06-04T00:51:28,917][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,917][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,917][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237043][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][10]] containing [6] requests, target allocation id: W4bn5H6YRKqseji2KsP2eQ, primary term: 2 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 48, queued tasks = 204, completed tasks = 1357279982]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237043][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][10]] containing [6] requests, target allocation id: W4bn5H6YRKqseji2KsP2eQ, primary term: 2 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 48, queued tasks = 204, completed tasks = 1357279982]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237043][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][10]] containing [6] requests, target allocation id: W4bn5H6YRKqseji2KsP2eQ, primary term: 2 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 48, queued tasks = 204, completed tasks = 1357279982]]"})
+#  [2020-06-04T00:51:28,918][INFO ][logstash.outputs.elasticsearch][filebeat] retrying failed action with response code: 429 ({"type"=>"es_rejected_execution_exception", "reason"=>"rejected execution of processing of [2370237001][indices:data/write/bulk[s][p]]: request: BulkShardRequest [[filebeat-6.5.1-2020.06.04][4]] containing [10] requests, target allocation id: RINAfN7ORhWeFFto5d4qJA, primary term: 1 on EsThreadPoolExecutor[name = rdu-es-data-01a/write, queue capacity = 200, org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor@3db3e16b[Running, pool size = 48, active threads = 47, queued tasks = 204, completed tasks = 1357279959]]"})
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-split-index.html#split-index-api-desc
+
+### _mappings and other bits/pieces
+# - https://gist.github.com/slmingol/ff667c1faa9163686a50fe1f9c0928ec
+
+# $ ./esl GET 'filebeat-ilm-6.5.1-2020.06.05-000008/_mapping?pretty' | jq '.[].mappings | .properties | [leaf_paths as $path | {"key": $path | join("."), "value": getpath($path)}] | from_entries' | head -20
+#  {
+#    "@timestamp.type": "date",
+#    "@version.type": "keyword",
+#    "@version.ignore_above": 1024,
+#    "GoVersion.type": "keyword",
+#    "GoVersion.ignore_above": 1024,
+#    "NumCPUs.type": "long",
+#    "PV.type": "keyword",
+#    "PV.ignore_above": 1024,
+#    "PVC.type": "keyword",
+#    "PVC.ignore_above": 1024,
+#    "PV_volume.type": "keyword",
+#    "PV_volume.ignore_above": 1024,
+#    "Request.properties.Name.type": "keyword",
+#    "Request.properties.Name.ignore_above": 1024,
+#    "Request.properties.Namespace.type": "keyword",
+#    "Request.properties.Namespace.ignore_above": 1024,
+#    "Service.properties.Name.type": "keyword",
+#    "Service.properties.Name.ignore_above": 1024,
+#    "Service.properties.Namespace.type": "keyword",
+
+# $ ./esl GET 'filebeat-ilm-6.5.1-2020.06.05-000008/_mapping?pretty' |  jq 'reduce ( tostream | select(length==2) | .[0] |= [join(".")] ) as [$p,$v] ( {} ; setpath($p; $v) )' | head -20
+#  {
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings._meta.version": "6.5.1",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.path_match": "fields.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.path_match": "docker.container.labels.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.path_match": "kibana.log.meta.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.mapping.ignore_above": 1024,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.date_detection": false,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@timestamp.type": "date",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@version.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@version.ignore_above": 1024,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.GoVersion.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.GoVersion.ignore_above": 1024,
+
+# $ ./esl GET 'filebeat-ilm-6.5.1-2020.06.05-000008/_mapping?pretty' |  jq '. as $in
+#  | reduce leaf_paths as $path ({};
+#       . + { ($path | map(tostring) | join(".")): $in | getpath($path) })' | head -20
+#  {
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings._meta.version": "6.5.1",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.path_match": "fields.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.0.fields.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.path_match": "docker.container.labels.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.1.docker.container.labels.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.path_match": "kibana.log.meta.*",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.2.kibana.log.meta.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.match_mapping_type": "string",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.mapping.ignore_above": 1024,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.dynamic_templates.3.strings_as_keyword.mapping.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@timestamp.type": "date",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@version.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.@version.ignore_above": 1024,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.GoVersion.type": "keyword",
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.GoVersion.ignore_above": 1024,
+#    "filebeat-ilm-6.5.1-2020.06.05-000008.mappings.properties.NumCPUs.type": "long",
+
+### URL - http://www.javachain.com/wp-content/uploads/2019/02/elasticsearch_monitoring_cheatsheet.pdf
+
+#  METRIC DESCRIPTION                       COMMAND
+#  Total number of queries                  curl 'localhost:9200/_cat/nodes?v&h=name,searchQueryTotal'
+#  Total time spent on queries              curl 'localhost:9200/_cat/nodes?v&h=name,searchQueryTime'
+#  Number of queries currently in progress  curl 'localhost:9200/_cat/nodes?v&h=name,searchQueryCurrent'
+#  Total number of fetches                  curl 'localhost:9200/_cat/nodes?v&h=name,searchFetchTotal'
+#  Total time spent on fetches              curl 'localhost:9200/_cat/nodes?v&h=name,searchFetchTime'
+#  Number of fetches currently in progress  curl 'localhost:9200/_cat/nodes?v&h=name,searchFetchCurrent'
+
+#  $ ./esl GET '_cat/nodes?v&h=name,search*'
+#  name                  search.fetch_current search.fetch_time search.fetch_total search.open_contexts search.query_current search.query_time search.query_total search.scroll_current search.scroll_time search.scroll_total
+#  lab-rdu-es-master-01b                    0                0s                  0                    0                    0                0s                  0                     0                 0s                   0
+#  lab-rdu-es-data-01a                      0              4.4h           38154697                    0                    0              7.2d           81379672                     0              37.1d              883709
+#  lab-rdu-es-master-01c                    0                0s                  0                    0                    0                0s                  0                     0                 0s                   0
+#  lab-rdu-es-ml-01b                        0                0s                  0                    0                    0                0s                  0                     0                 0s                   0
+#  lab-rdu-es-master-01a                    0                0s                  0                    0                    0                0s                  0                     0                 0s                   0
+#  lab-rdu-es-data-01f                      0              5.4h           30780808                    0                    0              4.6d           48895470                     0              27.9d              275674
+#  lab-rdu-es-data-01b                      0              5.1h           40792211                    0                    0              7.4d           81991439                     0              35.3d             2333088
+#  lab-rdu-es-data-01g                      0              6.6h           39498174                    0                    0              6.8d           55235709                     0              30.9d              403116
+#  lab-rdu-es-data-01e                      0              5.3h           30798550                    0                    0              4.7d           43743665                     0              27.1d              739857
+#  lab-rdu-es-ml-01a                        0                0s                  0                    0                    0                0s                  0                     0                 0s                   0
+#  lab-rdu-es-data-01c                      0              4.7h           38287961                    0                    0              7.8d           82490200                     0              32.9d              960862
+#  lab-rdu-es-data-01d                      0              7.6h           39549885                    0                    0              9.9d           84728378                     0              33.7d             1706192
+
+
+#  METRIC DESCRIPTION                              COMMAND
+#  Total number of documents indexed               curl 'localhost:9200/_cat/nodes?v&h=name,indexingIndexTotal'
+#  Total time spent indexing documents             curl 'localhost:9200/_cat/nodes?v&h=name,indexingIndexTime'
+#  Number of documents currently being indexed     curl 'localhost:9200/_cat/nodes?v&h=name,indexingIndexCurrent'
+#  Total number of index flushes to disk           curl 'localhost:9200/_cat/nodes?v&h=name,flushTotal'
+#  Total time spent on flushing indices to disk    curl 'localhost:9200/_cat/nodes?v&h=name,flushTotalTime'
+
+#  $ ./esl GET '_cat/nodes?v&h=name,index*,flush*&s=name'
+#  name                  indexing.delete_current indexing.delete_time indexing.delete_total indexing.index_current indexing.index_time indexing.index_total indexing.index_failed flush.total flush.total_time
+#  lab-rdu-es-data-01a                         0                   0s                     0                     21               60.2d          21839154970                   135      104776            10.9h
+#  lab-rdu-es-data-01b                         0                 1.3s                 38841                      1               51.3d          17923454032                   107       97473             8.7h
+#  lab-rdu-es-data-01c                         0                181ms                   316                      5               62.2d          21603788589                  1163      111210            12.4h
+#  lab-rdu-es-data-01d                         0                 62ms                   210                      2               80.9d          17343894967                   179       97929            13.5h
+#  lab-rdu-es-data-01e                         0                 43ms                     1                      1               29.4d           5801276095                     0       28557             6.7h
+#  lab-rdu-es-data-01f                         0                 2.1s                 38826                      3               25.6d           4839833004                     0       27987             5.7h
+#  lab-rdu-es-data-01g                         0                369ms                    92                      1               30.8d           6047979835                     2       32114             6.4h
+#  lab-rdu-es-master-01a                       0                   0s                     0                      0                  0s                    0                     0           0               0s
+#  lab-rdu-es-master-01b                       0                   0s                     0                      0                  0s                    0                     0           0               0s
+#  lab-rdu-es-master-01c                       0                   0s                     0                      0                  0s                    0                     0           0               0s
+#  lab-rdu-es-ml-01a                           0                   0s                     0                      0                  0s                    0                     0           0               0s
+#  lab-rdu-es-ml-01b                           0                   0s                     0                      0                  0s                    0                     0           0               0s
+
+#  $ ./esl GET '_cluster/pending_tasks?pretty'
+#  {
+#    "tasks" : [
+#      {
+#        "insert_order" : 57823107,
+#        "priority" : "URGENT",
+#        "source" : "create-index [.triggered_watches], cause [auto(bulk api)]",
+#        "executing" : true,
+#        "time_in_queue_millis" : 126,
+#        "time_in_queue" : "126ms"
+#      }
+#    ]
+#  }
+
+#  $ ./esl GET '_nodes/stats/thread_pool' | jq '.nodes[]
+#  | {node_name: .name, bulk_queue: .thread_pool.bulk.queue,
+#  search_queue: .thread_pool.search.queue, index_queue:
+#  .thread_pool.index.queue}' | paste - - - - - -  | sort -k3,3
+#  {	  "node_name": "lab-rdu-es-data-01a",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01b",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01c",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01d",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01e",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01f",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-data-01g",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-master-01a",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-master-01b",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-master-01c",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-ml-01a",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+#  {	  "node_name": "lab-rdu-es-ml-01b",	  "bulk_queue": null,	  "search_queue": 0,	  "index_queue": null	}
+
+#  $ ./esl GET '_nodes/stats/thread_pool' | jq '.nodes[] | {node_name: .name, bulk_rejected:
+#  .thread_pool.bulk.rejected, search_rejected:
+#  .thread_pool.search.rejected, index_rejected:
+#  .thread_pool.index.rejected}' | paste - - - - - - | sort -k3,3
+#  {	  "node_name": "lab-rdu-es-data-01a",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01b",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01c",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01d",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01e",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01f",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-data-01g",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-master-01a",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-master-01b",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-master-01c",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-ml-01a",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+#  {	  "node_name": "lab-rdu-es-ml-01b",	  "bulk_rejected": null,	  "search_rejected": 0,	  "index_rejected": null	}
+
+#  $ ./esl GET '_cat/nodes?v&h=name,field*&s=name'
+#  name                  fielddata.memory_size fielddata.evictions
+#  lab-rdu-es-data-01a                 658.8kb                   0
+#  lab-rdu-es-data-01b                 613.6kb                   0
+#  lab-rdu-es-data-01c                 574.1kb                   0
+#  lab-rdu-es-data-01d                 598.8kb                   0
+#  lab-rdu-es-data-01e                   245kb                   0
+#  lab-rdu-es-data-01f                 688.5kb                   0
+#  lab-rdu-es-data-01g                 698.9kb                   0
+#  lab-rdu-es-master-01a                    0b                   0
+#  lab-rdu-es-master-01b                    0b                   0
+#  lab-rdu-es-master-01c                    0b                   0
+#  lab-rdu-es-ml-01a                        0b                   0
+#  lab-rdu-es-ml-01b                        0b                   0
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/circuit-breaker.html#:~:text=Elasticsearch%20contains%20multiple%20circuit%20breakers,be%20used%20across%20all%20breakers.
+
+#  $ ./esl GET '_nodes/stats/breaker' | jq '.nodes[] |
+#  {node_name: .name, fielddata: .breakers.fielddata}' | paste - - - - - - - - - - - | gsed 's/ [{,}]\+[ \t]\+//g;s/,[ \t]\+/ /g' | column -t | sort -k3,3
+#  {  "node_name":  "lab-rdu-es-data-01a"    "fielddata":"limit_size_in_bytes":  13199264972  "limit_size":  "12.2gb"  "estimated_size_in_bytes":  674712  "estimated_size":  "658.8kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01b"    "fielddata":"limit_size_in_bytes":  13199264972  "limit_size":  "12.2gb"  "estimated_size_in_bytes":  628328  "estimated_size":  "613.6kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01c"    "fielddata":"limit_size_in_bytes":  13199264972  "limit_size":  "12.2gb"  "estimated_size_in_bytes":  587944  "estimated_size":  "574.1kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01d"    "fielddata":"limit_size_in_bytes":  13216697548  "limit_size":  "12.3gb"  "estimated_size_in_bytes":  613228  "estimated_size":  "598.8kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01e"    "fielddata":"limit_size_in_bytes":  13216697548  "limit_size":  "12.3gb"  "estimated_size_in_bytes":  250968  "estimated_size":  "245kb"    "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01f"    "fielddata":"limit_size_in_bytes":  13216697548  "limit_size":  "12.3gb"  "estimated_size_in_bytes":  705096  "estimated_size":  "688.5kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-data-01g"    "fielddata":"limit_size_in_bytes":  13216697548  "limit_size":  "12.3gb"  "estimated_size_in_bytes":  715768  "estimated_size":  "698.9kb"  "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-master-01a"  "fielddata":"limit_size_in_bytes":  2570007347   "limit_size":  "2.3gb"   "estimated_size_in_bytes":  0       "estimated_size":  "0b"       "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-master-01b"  "fielddata":"limit_size_in_bytes":  2570007347   "limit_size":  "2.3gb"   "estimated_size_in_bytes":  0       "estimated_size":  "0b"       "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-master-01c"  "fielddata":"limit_size_in_bytes":  2570007347   "limit_size":  "2.3gb"   "estimated_size_in_bytes":  0       "estimated_size":  "0b"       "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-ml-01a"      "fielddata":"limit_size_in_bytes":  2563034316   "limit_size":  "2.3gb"   "estimated_size_in_bytes":  0       "estimated_size":  "0b"       "overhead":  1.03  "tripped":  0  }
+#  {  "node_name":  "lab-rdu-es-ml-01b"      "fielddata":"limit_size_in_bytes":  2563034316   "limit_size":  "2.3gb"   "estimated_size_in_bytes":  0       "estimated_size":  "0b"       "overhead":  1.03  "tripped":  0  }
+
+#  $ ./esl GET '_nodes/stats/fs?pretty&human' | jq '.nodes[] | {node_name:
+#  .name, disk_total_in_bytes: .fs.total.total_in_bytes,
+#  disk_free_in_bytes: .fs.total.free_in_bytes, disk_available_in_bytes:
+#  .fs.total.available_in_bytes}' | paste - - - - - - | column -t | sort -k3,3
+#  {  "node_name":  "lab-rdu-es-data-01a",    "disk_total_in_bytes":  6396823207936,  "disk_free_in_bytes":  811044171776,   "disk_available_in_bytes":  811044171776   }
+#  {  "node_name":  "lab-rdu-es-data-01b",    "disk_total_in_bytes":  6396823207936,  "disk_free_in_bytes":  1354002599936,  "disk_available_in_bytes":  1354002599936  }
+#  {  "node_name":  "lab-rdu-es-data-01c",    "disk_total_in_bytes":  6396823207936,  "disk_free_in_bytes":  761359892480,   "disk_available_in_bytes":  761359892480   }
+#  {  "node_name":  "lab-rdu-es-data-01d",    "disk_total_in_bytes":  7676845096960,  "disk_free_in_bytes":  2568922083328,  "disk_available_in_bytes":  2568922083328  }
+#  {  "node_name":  "lab-rdu-es-data-01e",    "disk_total_in_bytes":  7677860118528,  "disk_free_in_bytes":  2131772026880,  "disk_available_in_bytes":  2131772026880  }
+#  {  "node_name":  "lab-rdu-es-data-01f",    "disk_total_in_bytes":  7676845096960,  "disk_free_in_bytes":  2690559541248,  "disk_available_in_bytes":  2690559541248  }
+#  {  "node_name":  "lab-rdu-es-data-01g",    "disk_total_in_bytes":  7677860118528,  "disk_free_in_bytes":  2741536256000,  "disk_available_in_bytes":  2741536256000  }
+#  {  "node_name":  "lab-rdu-es-master-01a",  "disk_total_in_bytes":  18746441728,    "disk_free_in_bytes":  8568393728,     "disk_available_in_bytes":  8568393728     }
+#  {  "node_name":  "lab-rdu-es-master-01b",  "disk_total_in_bytes":  18746441728,    "disk_free_in_bytes":  8084430848,     "disk_available_in_bytes":  8084430848     }
+#  {  "node_name":  "lab-rdu-es-master-01c",  "disk_total_in_bytes":  18746441728,    "disk_free_in_bytes":  8984297472,     "disk_available_in_bytes":  8984297472     }
+#  {  "node_name":  "lab-rdu-es-ml-01a",      "disk_total_in_bytes":  18238930944,    "disk_free_in_bytes":  14374723584,    "disk_available_in_bytes":  14374723584    }
+#  {  "node_name":  "lab-rdu-es-ml-01b",      "disk_total_in_bytes":  18238930944,    "disk_free_in_bytes":  14413008896,    "disk_available_in_bytes":  14413008896    }
+
+#  $ ./esl GET '_nodes/stats/transport' | jq '.nodes[] |
+#  {node_name: .name, network_bytes_sent: .transport.tx_size_in_bytes,
+#  network_bytes_received: .transport.rx_size_in_bytes}' | paste - - - - - | column -t  | sort -k3,3
+#  {  "node_name":  "lab-rdu-es-data-01a",    "network_bytes_sent":  52408944342847,  "network_bytes_received":  54247274051103  }
+#  {  "node_name":  "lab-rdu-es-data-01b",    "network_bytes_sent":  45309895222860,  "network_bytes_received":  43896368799662  }
+#  {  "node_name":  "lab-rdu-es-data-01c",    "network_bytes_sent":  58203554544463,  "network_bytes_received":  51159440090052  }
+#  {  "node_name":  "lab-rdu-es-data-01d",    "network_bytes_sent":  45018050581456,  "network_bytes_received":  42779196428855  }
+#  {  "node_name":  "lab-rdu-es-data-01e",    "network_bytes_sent":  15507376230658,  "network_bytes_received":  21391180675913  }
+#  {  "node_name":  "lab-rdu-es-data-01f",    "network_bytes_sent":  15514256843812,  "network_bytes_received":  14883378980091  }
+#  {  "node_name":  "lab-rdu-es-data-01g",    "network_bytes_sent":  17364386204816,  "network_bytes_received":  22156836628921  }
+#  {  "node_name":  "lab-rdu-es-master-01a",  "network_bytes_sent":  188026793694,    "network_bytes_received":  120334542247    }
+#  {  "node_name":  "lab-rdu-es-master-01b",  "network_bytes_sent":  323265855649,    "network_bytes_received":  341691482926    }
+#  {  "node_name":  "lab-rdu-es-master-01c",  "network_bytes_sent":  3094866179457,   "network_bytes_received":  4946955444395   }
+#  {  "node_name":  "lab-rdu-es-ml-01a",      "network_bytes_sent":  31545943912,     "network_bytes_received":  7756849840      }
+#  {  "node_name":  "lab-rdu-es-ml-01b",      "network_bytes_sent":  31545033884,     "network_bytes_received":  7744644242      }
+
+#  $  ./esl GET '_nodes/stats/http' | jq '.nodes[] | {node_name:
+#  .name, http_current_open: .http.current_open, http_total_opened:
+#  .http.total_opened}' | paste - - - - - | column -t | sort -k3,3
+#  {  "node_name":  "lab-rdu-es-data-01a",    "http_current_open":  294,  "http_total_opened":  264866  }
+#  {  "node_name":  "lab-rdu-es-data-01b",    "http_current_open":  291,  "http_total_opened":  195392  }
+#  {  "node_name":  "lab-rdu-es-data-01c",    "http_current_open":  290,  "http_total_opened":  195319  }
+#  {  "node_name":  "lab-rdu-es-data-01d",    "http_current_open":  292,  "http_total_opened":  194386  }
+#  {  "node_name":  "lab-rdu-es-data-01e",    "http_current_open":  292,  "http_total_opened":  32983   }
+#  {  "node_name":  "lab-rdu-es-data-01f",    "http_current_open":  294,  "http_total_opened":  33073   }
+#  {  "node_name":  "lab-rdu-es-data-01g",    "http_current_open":  291,  "http_total_opened":  44012   }
+#  {  "node_name":  "lab-rdu-es-master-01a",  "http_current_open":  0,    "http_total_opened":  500     }
+#  {  "node_name":  "lab-rdu-es-master-01b",  "http_current_open":  0,    "http_total_opened":  492     }
+#  {  "node_name":  "lab-rdu-es-master-01c",  "http_current_open":  0,    "http_total_opened":  494     }
+#  {  "node_name":  "lab-rdu-es-ml-01a",      "http_current_open":  0,    "http_total_opened":  4       }
+#  {  "node_name":  "lab-rdu-es-ml-01b",      "http_current_open":  0,    "http_total_opened":  4       }
+
+#  $ ./esl GET '_cat/allocation?v&h=*&s=node'
+#  shards disk.indices disk.used disk.avail disk.total disk.percent host            ip              node
+#     331          5tb       5tb    754.6gb      5.8tb           87 192.168.112.141 192.168.112.141 lab-rdu-es-data-01a
+#     331        4.5tb     4.5tb      1.2tb      5.8tb           78 192.168.112.142 192.168.112.142 lab-rdu-es-data-01b
+#     332        5.1tb     5.1tb    705.9gb      5.8tb           88 192.168.112.143 192.168.112.143 lab-rdu-es-data-01c
+#     332        4.6tb     4.6tb      2.3tb      6.9tb           66 192.168.116.29  192.168.116.29  lab-rdu-es-data-01d
+#     331          5tb       5tb      1.9tb      6.9tb           72 192.168.116.30  192.168.116.30  lab-rdu-es-data-01e
+#     331        4.5tb     4.5tb      2.4tb      6.9tb           64 192.168.116.31  192.168.116.31  lab-rdu-es-data-01f
+#     331        4.4tb     4.4tb      2.4tb      6.9tb           64 192.168.116.32  192.168.116.32  lab-rdu-es-data-01g
+
+#  $ ./esl GET '_cat/segments?v&h=*'  | head
+#  index                                     shard prirep ip              id                     segment generation docs.count docs.deleted     size size.memory committed searchable version compound
+#  .reporting-2020.02.02                     0     p      192.168.112.142 kp56LtTuTZSVfYfC3uAzjQ _2               2          1            0    1.4mb        3925 true      true       8.3.0   true
+#  .reporting-2020.02.02                     0     r      192.168.116.32  WuOMAIxrRcKG8TqPy8Zleg _2               2          1            0    1.4mb        3925 true      true       8.3.0   true
+#  .reporting-2020.01.26                     0     p      192.168.116.29  P4uG_g_JTiC2xk14UpZdIA _12             38         12            4      7mb        4677 true      true       8.3.0   false
+#  .reporting-2020.01.26                     0     p      192.168.116.29  P4uG_g_JTiC2xk14UpZdIA _14             40          1            0    2.1mb        3925 true      true       8.3.0   true
+#  .reporting-2020.01.26                     0     p      192.168.116.29  P4uG_g_JTiC2xk14UpZdIA _17             43          1            0    2.1mb        3925 true      true       8.3.0   true
+#  .reporting-2020.01.26                     0     p      192.168.116.29  P4uG_g_JTiC2xk14UpZdIA _1a             46          1            0      2mb        3925 true      true       8.3.0   true
+#  .reporting-2020.01.26                     0     r      192.168.116.31  3is48GZERPOBPNbNpPXs3Q _12             38         12            4      7mb        4677 true      true       8.3.0   false
+#  .reporting-2020.01.26                     0     r      192.168.116.31  3is48GZERPOBPNbNpPXs3Q _14             40          1            0    2.1mb        3925 true      true       8.3.0   true
+#  .reporting-2020.01.26                     0     r      192.168.116.31  3is48GZERPOBPNbNpPXs3Q _17             43          1            0    2.1mb        3925 true      true       8.3.0   true
+
+
+#  $ ./esl GET '_cat/segments/filebeat-ilm-6.5.1-2020.06.05*?v&h=*'  | head -20
+#  index                                shard prirep ip              id                     segment generation docs.count docs.deleted     size size.memory committed searchable version compound
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _57e          6746      41195            0     39mb       88877 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _5lf          7251      52835            0   52.9mb       75321 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _5xf          7683     182874            0  180.1mb      189464 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _600          7776      68920            0   66.3mb      108566 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _630          7884     164765            0  159.7mb      175977 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _67o          8052     156916            0  161.3mb      178639 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6az          8171      37713            0     35mb       89133 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6be          8186     101201            0   82.7mb      121679 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6dk          8264      13721            0   12.7mb       43238 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6dz          8279    3376907            0      5gb     3765256 true      true       8.4.0   false
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6e3          8283      12034            0   10.6mb       41434 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6es          8308      13432            0   12.3mb       46394 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6fm          8338       5386            0    5.2mb       36914 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6g0          8352       5320            0    5.1mb       35248 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6ga          8362      13524            0   12.3mb       45734 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6go          8376       3510            0    3.4mb       31955 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6gq          8378       3069            0    3.1mb       27779 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6gt          8381     241880            0  210.5mb      214053 true      true       8.4.0   true
+#  filebeat-ilm-6.5.1-2020.06.05-000007 0     p      192.168.116.30  _N1uuYoxTgOrgbB2l-vg2w _6gw          8384       2864            0    2.9mb       30675 true      true       8.4.0   true
+
+#  $ ./esl GET 'filebeat-ilm-6.5.1-2020.06.05*/_shard_stores?pretty'
+#  {
+#    "indices" : { }
+#  }
+
+# https://github.com/sematext/cheatsheets
+# https://davidlu1001.github.io/2020/04/16/ElasticSearch-Runbook/
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-settings.html
+
+#  $ ./esl GET "*/_settings/index.refresh_interval?flat_settings&pretty" | grep -E ': {|index' | sed 's/: {//g' | paste - - -|column -t | sort -k1,1 | sed 's/2020.*[^\"]"set/  "set/g' | sort | uniq -c | column -t
+#  1   ".security-tokens-7"               "settings"  "index.refresh_interval"  :  "1s"
+#  5   "apm-7.2.0-onboarding-             "settings"  "index.refresh_interval"  :  "5s"
+#  1   "apm-7.2.0-onboarding-2019.12.13"  "settings"  "index.refresh_interval"  :  "5s"
+#  8   "filebeat-6.2.3-                   "settings"  "index.refresh_interval"  :  "5s"
+#  45  "filebeat-6.5.1-                   "settings"  "index.refresh_interval"  :  "5s"
+#  45  "filebeat-7.6.2-                   "settings"  "index.refresh_interval"  :  "5s"
+#  45  "filebeat-default-                 "settings"  "index.refresh_interval"  :  "5s"
+#  11  "filebeat-flow-                    "settings"  "index.refresh_interval"  :  "5s"
+#  9   "filebeat-ilm-6.5.1-               "settings"  "index.refresh_interval"  :  "5s"
+#  1   "filebeat-ilm-7.6.2-               "settings"  "index.refresh_interval"  :  "5s"
+#  28  "heartbeat-7.5.1-                  "settings"  "index.refresh_interval"  :  "5s"
+#  1   "messaging-6.5.1-                  "settings"  "index.refresh_interval"  :  "5s"
+#  1   "messaging-ilm-6.5.1-              "settings"  "index.refresh_interval"  :  "5s"
+#  1   "messaging-ilm-7.6.2-              "settings"  "index.refresh_interval"  :  "5s"
+#  15  "metricbeat-6.1.1-                 "settings"  "index.refresh_interval"  :  "5s"
+#  14  "metricbeat-6.2.3-                 "settings"  "index.refresh_interval"  :  "5s"
+#  17  "metricbeat-6.5.1-                 "settings"  "index.refresh_interval"  :  "5s"
+#  17  "metricbeat-7.6.2-                 "settings"  "index.refresh_interval"  :  "5s"
+#  14  "metricbeat-default-               "settings"  "index.refresh_interval"  :  "5s"
+#  21  "packetbeat-default-               "settings"  "index.refresh_interval"  :  "5s"
+
+#  $ ./esl GET "*/_settings?flat_settings&include_defaults&pretty" | grep -E "index.refresh_interval|provided_name" | paste - -  | column -t | sort -k3,3 | sed 's/-2020.*", //g' | sort | uniq -c | grep -vE '"\.[a-z]' | column -t
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000001>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000002>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000003>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000004>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000005>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000006>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000007>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000008>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-6.5.1-{now/d}-000009>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-7.6.2-{now/d}-000001>",     "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<filebeat-ilm-default-{now/d}-000001>",   "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "<messaging-ilm-6.5.1-{now/d}-000001>",    "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<messaging-ilm-7.6.2-{now/d}-000001>",    "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "<messaging-ilm-default-{now/d}-000001>",  "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "api",                                     "index.refresh_interval"  :  "1s",
+#  5   "index.provided_name"  :  "apm-7.2.0-onboarding                      "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "apm-7.2.0-onboarding-2019.12.13",         "index.refresh_interval"  :  "5s",
+#  28  "index.provided_name"  :  "f5                                        "index.refresh_interval"  :  "1s",
+#  8   "index.provided_name"  :  "filebeat-6.2.3                            "index.refresh_interval"  :  "5s",
+#  45  "index.provided_name"  :  "filebeat-6.5.1                            "index.refresh_interval"  :  "5s",
+#  45  "index.provided_name"  :  "filebeat-7.6.2                            "index.refresh_interval"  :  "5s",
+#  45  "index.provided_name"  :  "filebeat-default                          "index.refresh_interval"  :  "5s",
+#  12  "index.provided_name"  :  "filebeat-flow                             "index.refresh_interval"  :  "5s",
+#  28  "index.provided_name"  :  "heartbeat-7.5.1                           "index.refresh_interval"  :  "5s",
+#  1   "index.provided_name"  :  "ilm-history-1-000001",                    "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "ilm-history-1-000002",                    "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "ilm-history-1-000003",                    "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "k8scapacity                               "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "k8scapacity-rollup",                      "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "messaging-6.5.1                           "index.refresh_interval"  :  "5s",
+#  15  "index.provided_name"  :  "metricbeat-6.1.1                          "index.refresh_interval"  :  "5s",
+#  14  "index.provided_name"  :  "metricbeat-6.2.3                          "index.refresh_interval"  :  "5s",
+#  17  "index.provided_name"  :  "metricbeat-6.5.1                          "index.refresh_interval"  :  "5s",
+#  17  "index.provided_name"  :  "metricbeat-7.6.2                          "index.refresh_interval"  :  "5s",
+#  14  "index.provided_name"  :  "metricbeat-default                        "index.refresh_interval"  :  "5s",
+#  21  "index.provided_name"  :  "packetbeat-default                        "index.refresh_interval"  :  "5s",
+#  22  "index.provided_name"  :  "syslog                                    "index.refresh_interval"  :  "1s",
+#  1   "index.provided_name"  :  "watcher",                                 "index.refresh_interval"  :  "1s",
+
+#  $ ./esl GET '_cat/indices?pretty&v&h=*' -H "Accept: application/json" | head -30
+#  [
+#    {
+#      "health" : "green",
+#      "status" : "open",
+#      "index" : ".reporting-2020.02.02",
+#      "uuid" : "TiSO-koHQoWX-4gTnTMpNg",
+#      "pri" : "1",
+#      "rep" : "1",
+#      "docs.count" : "1",
+#      "docs.deleted" : "0",
+#      "creation.date" : "1580856822274",
+#      "creation.date.string" : "2020-02-04T22:53:42.274Z",
+#      "store.size" : "2.9mb",
+#      "pri.store.size" : "1.4mb",
+#      "completion.size" : "0b",
+#      "pri.completion.size" : "0b",
+#      "fielddata.memory_size" : "0b",
+#      "pri.fielddata.memory_size" : "0b",
+#      "fielddata.evictions" : "0",
+#      "pri.fielddata.evictions" : "0",
+#      "query_cache.memory_size" : "0b",
+#      "pri.query_cache.memory_size" : "0b",
+#      "query_cache.evictions" : "0",
+#      "pri.query_cache.evictions" : "0",
+#      "request_cache.memory_size" : "2.7kb",
+#      "pri.request_cache.memory_size" : "764b",
+#      "request_cache.evictions" : "0",
+#      "pri.request_cache.evictions" : "0",
+#      "request_cache.hit_count" : "94",
+#      "pri.request_cache.hit_count" : "1",
+
+#  $ ./esl GET '_cat/shards/*06.06*?v&h=index,indexing.ind*,node&s=indexing.index_current&pretty' | grep -E '01a|node'
+#  index                             indexing.index_current indexing.index_time indexing.index_total indexing.index_failed node
+#  filebeat-flow-2020.06.06-09                            0               21.6m              5523467                     0 lab-rdu-es-data-01a
+#  metricbeat-6.5.1-2020.06.06                            0                2.3h             42233940                     0 lab-rdu-es-data-01a
+#  metricbeat-6.5.1-2020.06.06                            0                2.2h             42245814                     0 lab-rdu-es-data-01a
+#  filebeat-flow-2020.06.06-06                            0               20.5m              5562920                     0 lab-rdu-es-data-01a
+#  filebeat-flow-2020.06.06-13                            0               21.2m              5490736                     0 lab-rdu-es-data-01a
+#  filebeat-flow-2020.06.06-02                            0               22.6m              5806199                     0 lab-rdu-es-data-01a
+#  f5-2020.06.06                                          0                3.3m              1339635                     0 lab-rdu-es-data-01a
+#  metricbeat-7.6.2-2020.06.06                            0               16.6m              3675532                     0 lab-rdu-es-data-01a
+#  metricbeat-7.6.2-2020.06.06                            0               16.9m              3674945                     0 lab-rdu-es-data-01a
+
+#  $ ./esl GET '_cat/indices?pretty&v&h=index,indexing.index*&s=indexing.index_current:desc' -H 'Accept: application/json' | jq .[] | paste - - - - - - - | gsed 's/indexing\.//g;s/[}{]\+[ \t]\+//g;s/[ \t]\+}//g;s/\"//g' | column -t  | head
+#  index:  .reporting-2020.02.02,                      index_current:  0,  index_time:  0s,     index_total:  0,          index_failed:  0
+#  index:  .reporting-2020.01.26,                      index_current:  0,  index_time:  0s,     index_total:  0,          index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.14,                 index_current:  0,  index_time:  31.1m,  index_total:  10359892,   index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.13,                 index_current:  0,  index_time:  31.2m,  index_total:  10372263,   index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.12,                 index_current:  0,  index_time:  22.6m,  index_total:  10390919,   index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.11,                 index_current:  0,  index_time:  0s,     index_total:  0,          index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.10,                 index_current:  0,  index_time:  23m,    index_total:  10386600,   index_failed:  0
+#  index:  .reporting-2019.12.22,                      index_current:  0,  index_time:  0s,     index_total:  0,          index_failed:  0
+#  index:  heartbeat-7.5.1-2020.05.19,                 index_current:  0,  index_time:  21.9m,  index_total:  10443265,   index_failed:  0
+#  index:  .reporting-2019.12.29,                      index_current:  0,  index_time:  0s,     index_total:  0,          index_failed:  0
+  
+#  $ /esl GET '_cat/nodes?v&h=name,index*,segments.count,segments.index_writer_memory&s=name'
+#  name                  indexing.delete_current indexing.delete_time indexing.delete_total indexing.index_current indexing.index_time indexing.index_total indexing.index_failed segments.count segments.index_writer_memory
+#  lab-rdu-es-data-01a                         0                   0s                     0                     22               60.8d          22048637193                   135           8781                      338.1mb
+#  lab-rdu-es-data-01b                         0                 1.8s                 50206                      0               51.9d          18155839499                   107           8473                      271.4mb
+#  lab-rdu-es-data-01c                         0                189ms                   323                      5               62.7d          21799151001                  1163           8588                      306.1mb
+#  lab-rdu-es-data-01d                         0                 62ms                   210                      3                 82d          17522450551                   179           8220                      632.1mb
+#  lab-rdu-es-data-01e                         0                 43ms                     1                      1               30.3d           6007364340                     0           8554                      229.5mb
+#  lab-rdu-es-data-01f                         0                 3.2s                 50191                      3               26.6d           5050718598                     0           8336                      340.9mb
+#  lab-rdu-es-data-01g                         0                382ms                    99                      2               31.5d           6206951502                     2           8558                      524.4mb
+#  lab-rdu-es-master-01a                       0                   0s                     0                      0                  0s                    0                     0              0                           0b
+#  lab-rdu-es-master-01b                       0                   0s                     0                      0                  0s                    0                     0              0                           0b
+#  lab-rdu-es-master-01c                       0                   0s                     0                      0                  0s                    0                     0              0                           0b
+#  lab-rdu-es-ml-01a                           0                   0s                     0                      0                  0s                    0                     0              0                           0b
+#  lab-rdu-es-ml-01b                           0                   0s                     0                      0                  0s                    0                     0              0                           0b
+
+#  $ show_shards l | grep -E '06.0[456]' | awk '$3 == "p" {print}' | sort -k8,8 | awk '{print $8}' | uniq -c
+#    11 lab-rdu-es-data-01d
+#    13 lab-rdu-es-data-01e
+#    13 lab-rdu-es-data-01f
+#     9 lab-rdu-es-data-01g
+#    20 lab-rdu-es-data-01a
+#    25 lab-rdu-es-data-01b
+#    49 lab-rdu-es-data-01c
