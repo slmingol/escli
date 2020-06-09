@@ -492,7 +492,7 @@ show_nodes_threadpools () {
     # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
     local env="$1"
     usage_chk1 "$env" || return 1
-    ${escmd[$env]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed' \
+    ${escmd[$env]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed&s=node_name' \
 		| grep -v '0[ ]\+0[ ]\+0'
 }
 
