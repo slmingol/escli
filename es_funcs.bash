@@ -199,7 +199,7 @@ escli_lsl () {
             grep --color=never -A2 "^${line}" "${filename}"
         else
             grep --color=never -A1 "^${line} () {" "${filename}" | sed 's/ ().*//' | \
-                paste - - | pr -t -e42
+                paste - - | pr -t -e43
         fi
     done < <(awk '/^[0-9a-zA-Z_-]+ \(\) {|^#[0-9]+--/ {print $1}' "${filename}" | grep -v usage_chk)
     printf "\n\n"
@@ -661,6 +661,30 @@ show_shard_distribution_by_node_last3days () {
         ) | column -t
         printf "\n==============================================\n"
     done
+    printf "\n\n"
+}
+
+show_hot_idxs_shard_distribution_by_node () {
+    # show distribution of today's  hot index shards across nodes
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    todayDate=$(calc_date '0 days')
+    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+
+    printf "\n\n"
+    (
+        printf "node indexType #shards\n"
+        printf -- "---- --------- -------\n"
+        show_shards "$env" | \
+            grep "$todayDay" \
+            | grep -vE '^\.|f5|heart|syslog' \
+            | awk '{print $8, $1}' \
+            | sed "s/-${todayDate}//g" \
+            | sort -k1,2 \
+            | uniq -c \
+            | awk '{print $2, $3, $1}'
+    ) | column -t
     printf "\n\n"
 }
 
