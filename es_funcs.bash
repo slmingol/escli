@@ -672,19 +672,41 @@ show_hot_idxs_shard_distribution_by_node () {
     todayDate=$(calc_date '0 days')
     todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
 
-    printf "\n\n"
-    (
-        printf "node indexType #shards\n"
-        printf -- "---- --------- -------\n"
-        show_shards "$env" | \
-            grep "$todayDay" \
-            | grep -vE '^\.|f5|heart|syslog|default' \
-            | awk '{print $8, $1}' \
-            | sed "s/-${todayDate}//g" \
-            | sort -k1,2 \
-            | uniq -c \
-            | awk '{print $2, $3, $1}'
-    ) | column -t
+    shardDetails=$(
+        (
+            printf "node indexType #shards\n"
+            printf -- "---- --------- -------\n"
+            show_shards "$env" | \
+                grep "$todayDay" \
+                | grep -vE '^\.|f5|heart|syslog|default' \
+                | awk '{print $8, $1}' \
+                | sed "s/-${todayDate}//g" \
+                | sort -k1,2 \
+                | uniq -c \
+                | awk '{print $2, $3, $1}'
+        ) | column -t
+    )
+
+    nodes="$(echo "$shardDetails" | grep -vE '^$|node|--' | awk '{print $1}' | sort -u)"
+
+    colWidth="$(echo "$shardDetails" | grep '^node' | wc -c | awk '{print $1}')"
+    # adjust to remove NEWLINE
+    (( colWidth-- ))
+    dividingLine="$(printf -- '-%.0s' $(seq $colWidth))"
+
+    printf "\n\n[DATE: %s]\n\n" "$todayDate"
+
+    colHeader="$(echo "$shardDetails" | grep -E '^node|^--')"
+    printf "\n\n%s\n" "$colHeader"
+
+    for node in $nodes; do
+        echo "$shardDetails" | grep "$node"
+        echo "$shardDetails" | awk -v node="${node}" '$1 == node {total += $3} END {printf("* * %0.0f\n"), total}'
+    done \
+        | column -t \
+        | gsed "s/\(^\* .*\)/${dividingLine} \n\1\n/g" \
+        | sed 's/\*/ /g'
+
     printf "\n\n"
 }
 
