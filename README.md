@@ -161,7 +161,7 @@ show_shards_biggerthan50gb
 show_idx_with_oversized_shards_summary
 show_idx_with_oversized_shards_details
 show_balance_throttle
-increase_balance_throttle
+#D
 increase_balance_throttle_XXXmb
 reset_balance_throttle
 change_allocation_threshold
@@ -312,7 +312,6 @@ show_idx_with_oversized_shards_details         # show detailed view of indexes w
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle                          # show routing allocations for balancing & recoveries (current)
-increase_balance_throttle                      # increase routing allocations for balancing & recoveries (throttle open)
 increase_balance_throttle_XXXmb                # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
 reset_balance_throttle                         # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold                    # override the allocation threshold (cluster.routing.allocation.balance.threshold)

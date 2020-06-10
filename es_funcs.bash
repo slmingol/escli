@@ -823,26 +823,26 @@ show_balance_throttle () {
     showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
 }
 
-increase_balance_throttle () {
-    # increase routing allocations for balancing & recoveries (throttle open)
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    THROTTLEINC=$(cat <<-EOM
-        {
-            "persistent": {
-                "cluster.routing.allocation.cluster_concurrent_rebalance" : "10",
-                "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "5",
-                "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "5",
-                "cluster.routing.allocation.node_concurrent_recoveries" : "20",
-                "cluster.routing.allocation.node_initial_primaries_recoveries" : "10",
-                "indices.recovery.max_bytes_per_sec" : "2000mb"
-            }
-        }
-	EOM
-    )
-    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
-    showcfg_cluster "$env" | jq .persistent
-}
+#D increase_balance_throttle () {
+#D     # increase routing allocations for balancing & recoveries (throttle open)
+#D     local env="$1"
+#D     usage_chk1 "$env" || return 1
+#D     THROTTLEINC=$(cat <<-EOM
+#D         {
+#D             "persistent": {
+#D                 "cluster.routing.allocation.cluster_concurrent_rebalance" : "10",
+#D                 "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "5",
+#D                 "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "5",
+#D                 "cluster.routing.allocation.node_concurrent_recoveries" : "20",
+#D                 "cluster.routing.allocation.node_initial_primaries_recoveries" : "10",
+#D                 "indices.recovery.max_bytes_per_sec" : "2000mb"
+#D             }
+#D         }
+#D 	EOM
+#D     )
+#D     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
+#D     showcfg_cluster "$env" | jq .persistent
+#D }
 
 increase_balance_throttle_XXXmb () {
     # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
