@@ -721,7 +721,7 @@ show_hot_idxs_shard_distribution_by_node () {
         echo "$shardDetails" | awk -v node="${node}" '$1 == node {total += $3} END {printf("* * %0.0f\n"), total}'
     done \
         | column -t \
-        | gsed "s/\(^\* .*\)/${dividingLine} \n\1\n/g" \
+        | $sedCmd "s/\(^\* .*\)/${dividingLine} \n\1\n/g" \
         | sed 's/\*/ /g'
 
     printf "\n\n"
@@ -1447,8 +1447,8 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
         | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[] | .' \
         | grep -v '"key"' \
         | paste - - - - - - - - - - - - - - - - \
-        | gsed 's/[ \t]\+[{}]\+[ \t]\+/ /g' \
-        | gsed 's/[ \t]\+[}{]\+[ \t]\+/ /g' #\
+        | $sedCmd 's/[ \t]\+[{}]\+[ \t]\+/ /g' \
+        | $sedCmd 's/[ \t]\+[}{]\+[ \t]\+/ /g' #\
         #| column -t
     #    | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[].key_as_string, .hourly_buckets.buckets[].doc_count' \
     #    | paste - - -  \
