@@ -2,10 +2,15 @@
 This repo includes a CLI tool to simplify interacting with the Elasticsearch REST API. It makes a couple of assumptions:
 
 - On OSX you have the following installed via `brew`:
-  - `greadlink`
-  -  `gsed`
-  -  `gdate`
-  -  `gpaste`
+  - `brew install coreutils` provides:
+    - `greadlink`
+    - `gdate`
+    - `gpaste`
+  - `brew install gnu-sed` provides:
+    - `gsed`
+  - `brew install bash` for bash version 4 or later
+    - `grep -q "/usr/local/bin/bash" /etc/shells || echo '/usr/local/bin/bash' | sudo tee -a /etc/shells` to add the brew installed bash to the list of approved shells
+    - `chsh -s /usr/local/bin/bash` to switch to the brew installed bash shell permanently
 - ***(Preferred)*** Your credentials are stored in LastPass
 - ***(Preferred)*** You have the LastPass CLI tool installed, `lpass` via `brew`
 - ***(Alternative)*** Use some other method to provide credentials (see ``escli.conf.sample`` for other methods)
