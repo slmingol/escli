@@ -524,6 +524,18 @@ show_small_shards () {
     show_shards "$env" | grep -E "index|${node}" | tail -40
 }
 
+show_hot_shards () {
+    # list today's shards for a given node's suffix (1a, 1b, etc.)
+    local env="$1"
+    local node="$2"
+    usage_chk2 "$env" "$node" || return 1
+
+    todayDate=$(calc_date '0 days')
+    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+
+    show_shards "$env" | grep -E "^index|${todayDay}" | grep -E "^index|${node}"
+}
+
 show_shard_usage_by_node () {
     # list all the index shards sorted by size (big->small)
     local env="$1"
@@ -714,6 +726,8 @@ show_hot_idxs_shard_distribution_by_node () {
 
     printf "\n\n"
 }
+
+
 
 calc_hot_idxs_shard_sweet_spot () {
     # calculate optimal number of hot index shards per node

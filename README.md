@@ -148,6 +148,7 @@ show_nodes_threadpools
 show_shards
 show_big_shards
 show_small_shards
+show_hot_shards
 show_shard_usage_by_node
 relo_shard
 cancel_relo_shard
@@ -290,6 +291,7 @@ show_nodes_threadpools                         # list ES nodes thread pool count
 show_shards                                    # list all the index shards sorted by size (big->small)
 show_big_shards                                # list top 20 shards for a given node's suffix (1a, 1b, etc.)
 show_small_shards                              # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
+show_hot_shards                                # list today's shards for a given node's suffix (1a, 1b, etc.)
 show_shard_usage_by_node                       # list all the index shards sorted by size (big->small)
 relo_shard                                     # move an indices' shard from node suffix X to node suffix Y
 cancel_relo_shard                              # cancel move of an index shard from node suffix X
