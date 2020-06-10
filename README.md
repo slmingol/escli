@@ -150,6 +150,7 @@ cancel_relo_shards_all
 retry_unassigned_shards
 show_shard_distribution_by_node_last3days
 show_hot_idxs_shard_distribution_by_node
+calc_hot_idxs_shard_sweet_spot
 show_shards_biggerthan50gb
 show_idx_with_oversized_shards_summary
 show_idx_with_oversized_shards_details
@@ -288,13 +289,18 @@ relo_shard                                     # move an indices' shard from nod
 cancel_relo_shard                              # cancel move of an index shard from node suffix X
 cancel_relo_shards_all                         # cancel all shard RELOCATIONS in recovery queue
 retry_unassigned_shards                        # reallocate all unassignable shards (elapsed past 5 retries)
+
+#6-----------------------------------------------
+# shard size analysis funcs
+##-----------------------------------------------
 show_shard_distribution_by_node_last3days      # show distribution of day X's shards across nodes
-show_hot_idxs_shard_distribution_by_node       # show distribution of today's  hot index shards across nodes
+show_hot_idxs_shard_distribution_by_node       # show distribution of today's hot index shards across nodes
+calc_hot_idxs_shard_sweet_spot                 # calculate optimal number of hot index shards per node
 show_shards_biggerthan50gb                     # show shards which are > 50GB (too big)
 show_idx_with_oversized_shards_summary         # show summary of indexes w/ shards > 50GB (too big)
 show_idx_with_oversized_shards_details         # show detailed view of indexes w/ shards > 50GB (too big)
 
-#6-----------------------------------------------
+#7-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle                          # show routing allocations for balancing & recoveries (current)
@@ -303,7 +309,7 @@ increase_balance_throttle_XXXmb                # increase bytes_per_sec routing 
 reset_balance_throttle                         # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold                    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
-#7-----------------------------------------------
+#8-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery                                  # show a summary of recovery queue
@@ -319,7 +325,7 @@ set_idx_default_field                          # set index.query.default_field =
 set_tmplate_default_field                      # set template index.query.default_field => [ "*" ]
 set_idx_num_replicas_to_X                      # set an index's number_of_replicas to X
 
-#8-----------------------------------------------
+#9-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop                                          # mimics `top` command, watching ES nodes CPU/MEM usage
@@ -343,7 +349,7 @@ show_idx_doc_sources_all_cnts                  # show the total num. docs each h
 show_idx_doc_sources_all_k8sns_cnts            # show the total num. docs each namespace sent to an index
 show_idx_doc_sources_all_k8sns_cnts_hourly     # show the total num. docs each namespace sent to an index
 
-#9-----------------------------------------------
+#10----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx                     # show number of shards configured per index template
@@ -355,7 +361,7 @@ enable_shard_allocations                       # allow the allocator to route sh
 disable_shard_allocations                      # disallow the allocator to route shards (cluster.routing.allocation.enable)
 clear_shard_allocations                        # clear the allocator to route shards (cluster.routing.allocation.enable)
 
-#10----------------------------------------------
+#11----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes                                 # show index sizes sorted (big -> small)
@@ -365,14 +371,14 @@ showcfg_idx_cfgs                               # show all '<index name>/_setting
 showcfg_idx_stats                              # show all '<index name>/_stats'
 show_idx_version_cnts                          # show index sizes sorted (big -> small)
 
-#11----------------------------------------------
+#12----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes                            # show excluded nodes from cluster
 exclude_node_name                              # exclude a node from cluster (node suffix)
 clear_excluded_nodes                           # clear any excluded cluster nodes
 
-#12----------------------------------------------
+#13----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami                                       # show auth info about who am i
@@ -383,7 +389,7 @@ list_auth_rolemappings                         # list all rolemappings
 evict_auth_cred_cache                          # evict/clear users from the user cache
 create_bearer_token                            # create bearer token for user
 
-#13----------------------------------------------
+#14----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range                          # delete k8s namespace docs over a specific time range
@@ -391,7 +397,7 @@ forcemerge_to_expunge_deletes                  # force merge of shards to expung
 estail_deletebyquery                           # watch deletebyquery tasks
 estail_forcemerge                              # watch forcemerges in tasks queue
 
-#14----------------------------------------------
+#15----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays                  # calc. the total docs & HDD storage used by all indices over X days
@@ -399,7 +405,7 @@ calc_daily_docs_hdd_overXdays                  # calc. the individual daily tota
 calc_idx_type_avgs_overXdays                   # calc. the avg number of docs & HDD storage used per idx types over X days
 calc_num_nodes_overXdays                       # calc. the HDD storage required based on idx types usage over X days
 
-#15----------------------------------------------
+#16----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                 # show all template details

@@ -619,6 +619,11 @@ retry_unassigned_shards () {
     echo "${cmdOutput}" | less
 }
 
+
+
+#6-----------------------------------------------
+# shard size analysis funcs
+##-----------------------------------------------
 show_shard_distribution_by_node_last3days () {
     # show distribution of day X's shards across nodes
     local env="$1"
@@ -665,7 +670,7 @@ show_shard_distribution_by_node_last3days () {
 }
 
 show_hot_idxs_shard_distribution_by_node () {
-    # show distribution of today's  hot index shards across nodes
+    # show distribution of today's hot index shards across nodes
     local env="$1"
     usage_chk1 "$env" || return 1
 
@@ -708,6 +713,20 @@ show_hot_idxs_shard_distribution_by_node () {
         | sed 's/\*/ /g'
 
     printf "\n\n"
+}
+
+calc_hot_idxs_shard_sweet_spot () {
+    # calculate optimal number of hot index shards per node
+    local env="$1"
+    usage_chk1 "$env" || return 1
+
+    todayDate=$(calc_date '0 days')
+    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+
+    numDailyHotShards=$(show_shards "$env" |grep "$todayDay" | grep -vE '^\.|f5|heart|syslog' | wc -l)
+    numNodes=$(list_nodes_storage "$env" | grep es-data | wc -l)
+    printf "\n\n"
+    printf "Optimal hot indexes' shards per node: %s\n\n\n" "$(ceiling_divide "$numDailyHotShards" "$numNodes")"
 }
 
 show_shards_biggerthan50gb () {
@@ -779,7 +798,8 @@ show_idx_with_oversized_shards_details () {
 
 
 
-#6-----------------------------------------------
+
+#7-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
 show_balance_throttle () {
@@ -868,7 +888,7 @@ change_allocation_threshold () {
 
 
 
-#7-----------------------------------------------
+#8-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery () {
@@ -1055,7 +1075,7 @@ set_idx_num_replicas_to_X () {
 
 
 
-#8-----------------------------------------------
+#9-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop () {
@@ -1090,7 +1110,7 @@ estop_rejected_writes () {
     # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed'  \
+    watch -d "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed'  \
         | grep -E 'write|completed' \
         | awk 'NR == 1; NR > 1 {print \$0 | \"sort -k4,4gr\"}' \
         | head -40"
@@ -1424,7 +1444,7 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
 
 
 
-#9-----------------------------------------------
+#10----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx () {
@@ -1563,7 +1583,7 @@ clear_shard_allocations () {
 
 
 
-#10----------------------------------------------
+#11----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes () {
@@ -1620,7 +1640,7 @@ show_idx_version_cnts () {
 
 
 
-#11----------------------------------------------
+#12----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes () {
@@ -1671,7 +1691,7 @@ clear_excluded_nodes () {
 
 
 
-#12----------------------------------------------
+#13----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -1734,7 +1754,7 @@ create_bearer_token () {
 
 
 
-#13----------------------------------------------
+#14----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range () {
@@ -1826,7 +1846,7 @@ estail_forcemerge () {
 
 
 
-#14----------------------------------------------
+#15----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays () {
@@ -2058,7 +2078,7 @@ calc_num_nodes_overXdays () {
 
 
 
-#15----------------------------------------------
+#16----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {
