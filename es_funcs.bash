@@ -695,7 +695,7 @@ show_hot_idxs_shard_distribution_by_node () {
             printf -- "---- --------- -------\n"
             show_shards "$env" | \
                 grep "$todayDay" \
-                | grep -vE '^\.|f5|heart|syslog|default' \
+                | grep -vE '^\.|f5|heart|default' \
                 | awk '{print $8, $1}' \
                 | sed "s/-${todayDate}//g" \
                 | sort -k1,2 \
