@@ -210,6 +210,7 @@ delete_idx
 showcfg_idx_cfgs
 showcfg_idx_stats
 show_idx_version_cnts
+show_idx_mappings
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -375,6 +376,7 @@ delete_idx                                     # delete an index
 showcfg_idx_cfgs                               # show all '<index name>/_settings' configs
 showcfg_idx_stats                              # show all '<index name>/_stats'
 show_idx_version_cnts                          # show index sizes sorted (big -> small)
+show_idx_mappings                              # show an index's _mappings (flattened) '<index name>/_mapping'
 
 #12----------------------------------------------
 # node exclude/include funcs

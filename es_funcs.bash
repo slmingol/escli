@@ -1638,6 +1638,22 @@ show_idx_version_cnts () {
     ) | column -t
 }
 
+show_idx_mappings () {
+    # show an index's _mappings (flattened) '<index name>/_mapping'
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    #${escmd[$env]} GET ${idxArg}'/_mapping?pretty' | jq -C . | less -r
+    ${escmd[$env]} GET ${idxArg}'/_mapping?pretty' \
+        | jq -C '
+            .[].mappings | .properties 
+            | [leaf_paths as $path | {"key": $path | join("."), "value": getpath($path)}] 
+            | from_entries
+          ' \
+        | less -r
+}
+
 
 
 #12----------------------------------------------
