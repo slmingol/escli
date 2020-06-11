@@ -362,6 +362,19 @@ usage_chk11 () {
         && return 1
 }
 
+usage_chk12 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a field name)
+    local env="$1"
+    local idxArg="$2"
+    local field="$3"
+
+    # NOTE: Be careful where you put the `-` in the `$field` test. Should be at end, anywhere else
+    #       and bash may interpret characters in a range
+    [[ $env =~ [lpc] && $idxArg != '' && ( $field =~ ^[a-zA-Z0-9_@.-]+ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern> <field name>\n\n" \
+        && return 1
+}
+
 
 
 #3-----------------------------------------------
@@ -1166,6 +1179,16 @@ estop_rejected_writes () {
         | head -40"
 }
 
+estop_active_threads () {
+    # watches ES thread pools for active/rejected activities
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch "${escmd[$env]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed&s=node_name' \
+		| grep -v '0[ ]\+0[ ]\+[0-9]' \
+        | grep -v master- \
+        | head -40"
+}
+
 show_health () {
     # cluster's health stats
     local env="$1"
@@ -1734,7 +1757,7 @@ show_field_capabilities () {
 }
 
 show_fields_multiple_defs_summary () {
-    # list of fields with multipe capabilities defs. for index pattern
+    # list of fields with multiple capabilities defs. for index pattern
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
@@ -1755,7 +1778,7 @@ show_fields_multiple_defs_summary () {
 }
 
 show_fields_multiple_defs_details () {
-    # detailed view of fields with multipe capabilities defs. for index pattern
+    # detailed view of fields with multiple capabilities defs. for index pattern
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
@@ -1774,6 +1797,26 @@ show_fields_multiple_defs_details () {
 
         printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
     done
+    printf "\n\n"
+}
+
+show_field_X_multiple_defs_details () {
+    # detailed view of a single field's multiple capabilities defs. for index pattern
+    local env="$1"
+    local idxArg="$2"
+    local field="$3"
+    usage_chk12 "$env" "$idxArg" "$field" || return 1
+
+    colWidth="50"
+
+    printf "\n\n"
+    printf "[FIELD: %s]\n" "$field"
+    printf "%s\n" "$(printf -- '-%.0s' $(seq 1 ${colWidth}))"
+
+     ${escmd[$env]} GET ${idxArg}"/_field_caps?fields=${field}&pretty" \
+         | jq -r ".fields | .\"${field}\""
+
+     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
     printf "\n\n"
 }
 

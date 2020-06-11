@@ -183,6 +183,7 @@ estop_recovery
 estop_relo
 estop_tasks
 estop_rejected_writes
+estop_active_threads
 show_health
 show_watermarks
 show_state
@@ -216,6 +217,7 @@ show_idx_mappings
 show_field_capabilities
 show_fields_multiple_defs_summary
 show_fields_multiple_defs_details
+show_field_X_multiple_defs_details
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -345,6 +347,7 @@ estop_recovery                                 # watches the ES recovery queue
 estop_relo                                     # watches ES relocations
 estop_tasks                                    # watches ES tasks
 estop_rejected_writes                          # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
+estop_active_threads                           # watches ES thread pools for active/rejected activities
 show_health                                    # cluster's health stats
 show_watermarks                                # show watermarks when storage marks readonly
 show_state                                     # shows the state of the indicies' shards (RELO, Translog, etc.)
@@ -388,8 +391,9 @@ show_idx_mappings                              # show an index's _mappings (flat
 # field funcs
 ##-----------------------------------------------
 show_field_capabilities                        # show field capabilities (type, searchable, aggregatable) for index pattern
-show_fields_multiple_defs_summary              # list of fields with multipe capabilities defs. for index pattern
-show_fields_multiple_defs_details              # detailed view of fields with multipe capabilities defs. for index pattern
+show_fields_multiple_defs_summary              # list of fields with multiple capabilities defs. for index pattern
+show_fields_multiple_defs_details              # detailed view of fields with multiple capabilities defs. for index pattern
+show_field_X_multiple_defs_details             # detailed view of a single field's multiple capabilities defs. for index pattern
 
 #13----------------------------------------------
 # node exclude/include funcs
