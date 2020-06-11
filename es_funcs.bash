@@ -352,7 +352,7 @@ usage_chk10 () {
 }
 
 usage_chk11 () {
-    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer or `-1`)
     local env="$1"
     local idxArg="$2"
     local numShards="$3"
@@ -1003,29 +1003,6 @@ disable_readonly_idxs () {
     ${escmd[$env]} PUT '_all/_settings' -d "$ALLOWDEL"
 }
 
-set_shards_per_node_idx () {
-    # set index.routing.allocation.total_shards_per_node = X
-    local env="$1"
-    local idxArg="$2"
-    local numShards="$3"
-    usage_chk11 "$env" "$idxArg" "$numShards" || return 1
-    SHARDSNODEFIELD=$(cat <<-EOM
-        {
-         "index": {
-           "routing": {
-             "allocation": {
-               "total_shards_per_node": "$numShards"
-             }
-            }
-          }
-        }
-	EOM
-    )
-    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$SHARDSNODEFIELD"
-
-    #REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/allocation-total-shards.html
-}
-
 show_readonly_idxs () {
     # show indexes' read_only setting which are enabled (true)
     local env="$1"
@@ -1099,6 +1076,31 @@ set_tmplate_default_field () {
 	EOM
     )
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
+}
+
+set_idx_shards_per_node () {
+    # set index.routing.allocation.total_shards_per_node = X
+    local env="$1"
+    local idxArg="$2"
+    local numShards="$3"
+    usage_chk11 "$env" "$idxArg" "$numShards" || return 1
+    SHARDSNODEFIELD=$(cat <<-EOM
+        {
+         "index": {
+           "routing": {
+             "allocation": {
+               "total_shards_per_node": "$numShards"
+             }
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$SHARDSNODEFIELD"
+
+    # REF:
+    #   - https://www.elastic.co/guide/en/elasticsearch/reference/current/allocation-total-shards.html
+    #   - https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
 }
 
 set_idx_num_replicas_to_X () {
