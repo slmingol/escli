@@ -1820,6 +1820,29 @@ show_field_X_multiple_defs_details () {
     printf "\n\n"
 }
 
+show_fields () {
+    # Return a list of fields in a given index pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg"  return 1
+
+    printf "Unique fields in '${idxArg}': "
+    ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&filter_path=fields' \
+        | jq '.fields | keys'
+    printf "\n\n"
+
+}
+
+show_field_count () {
+    # Return a count of fields in a given index pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg"  return 1
+
+    printf "Unique count of fields in '${idxArg}': "
+    ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&filter_path=fields' \
+        | jq '.fields | length'
+}
 
 #13----------------------------------------------
 # node exclude/include funcs
