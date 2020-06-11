@@ -1730,6 +1730,7 @@ show_field_capabilities () {
     ) | column -t
 
     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-field-caps.html
 }
 
 
