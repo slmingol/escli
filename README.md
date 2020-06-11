@@ -213,6 +213,7 @@ showcfg_idx_cfgs
 showcfg_idx_stats
 show_idx_version_cnts
 show_idx_mappings
+show_field_capabilities
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -382,13 +383,18 @@ show_idx_version_cnts                          # show index sizes sorted (big ->
 show_idx_mappings                              # show an index's _mappings (flattened) '<index name>/_mapping'
 
 #12----------------------------------------------
+# field funcs
+##-----------------------------------------------
+show_field_capabilities                        # show field capabilities (type, searchable, aggregatable) for index pattern
+
+#13----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes                            # show excluded nodes from cluster
 exclude_node_name                              # exclude a node from cluster (node suffix)
 clear_excluded_nodes                           # clear any excluded cluster nodes
 
-#13----------------------------------------------
+#14----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami                                       # show auth info about who am i
@@ -399,7 +405,7 @@ list_auth_rolemappings                         # list all rolemappings
 evict_auth_cred_cache                          # evict/clear users from the user cache
 create_bearer_token                            # create bearer token for user
 
-#14----------------------------------------------
+#15----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range                          # delete k8s namespace docs over a specific time range
@@ -407,7 +413,7 @@ forcemerge_to_expunge_deletes                  # force merge of shards to expung
 estail_deletebyquery                           # watch deletebyquery tasks
 estail_forcemerge                              # watch forcemerges in tasks queue
 
-#15----------------------------------------------
+#16----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays                  # calc. the total docs & HDD storage used by all indices over X days
@@ -415,7 +421,7 @@ calc_daily_docs_hdd_overXdays                  # calc. the individual daily tota
 calc_idx_type_avgs_overXdays                   # calc. the avg number of docs & HDD storage used per idx types over X days
 calc_num_nodes_overXdays                       # calc. the HDD storage required based on idx types usage over X days
 
-#16----------------------------------------------
+#17----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                 # show all template details

@@ -1707,6 +1707,34 @@ show_idx_mappings () {
 
 
 #12----------------------------------------------
+# field funcs
+##-----------------------------------------------
+show_field_capabilities () {
+    # show field capabilities (type, searchable, aggregatable) for index pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    colWidth="120"
+
+    printf "\n\n"
+    (
+        printf "field type searchable aggregatable\n"
+        printf -- "----- ---- ---------- ------------\n"
+        ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&pretty' \
+            | jq '.fields' \
+            | paste - - - - - - - \
+            | $sedCmd 's/:[ \t]\+{.*{//g;s/^{[ \t]\+//g;s/^[ \t]\+},[ \t]\+//g;s/[ \t]\+}$//g;s/[ \t]\+}[ \t]\+}//g' \
+            | $sedCmd 's/"type":\|"searchable":\|"aggregatable":\|"\|,//g' \
+            | sort -k1,1
+    ) | column -t
+
+    printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+}
+
+
+
+#13----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes () {
@@ -1757,7 +1785,7 @@ clear_excluded_nodes () {
 
 
 
-#13----------------------------------------------
+#14----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -1820,7 +1848,7 @@ create_bearer_token () {
 
 
 
-#14----------------------------------------------
+#15----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range () {
@@ -1912,7 +1940,7 @@ estail_forcemerge () {
 
 
 
-#15----------------------------------------------
+#16----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays () {
@@ -2144,7 +2172,7 @@ calc_num_nodes_overXdays () {
 
 
 
-#16----------------------------------------------
+#17----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {
