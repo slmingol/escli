@@ -1748,7 +1748,8 @@ show_fields_multiple_defs_summary () {
         ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&pretty' \
             | jq -r '.fields | to_entries | .[] | .key, (.value | length)' \
             | paste - - \
-            | grep -v 1
+            | grep -v 1 \
+            | sort -k1,1
     ) | column -t
     printf "\n\n"
 }
