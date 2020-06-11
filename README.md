@@ -218,8 +218,8 @@ show_field_capabilities
 show_fields_multiple_defs_summary
 show_fields_multiple_defs_details
 show_field_X_multiple_defs_details
-show_fields
-show_field_count
+show_field_names
+show_field_counts
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -396,8 +396,8 @@ show_field_capabilities                        # show field capabilities (type, 
 show_fields_multiple_defs_summary              # list of fields with multiple capabilities defs. for index pattern
 show_fields_multiple_defs_details              # detailed view of fields with multiple capabilities defs. for index pattern
 show_field_X_multiple_defs_details             # detailed view of a single field's multiple capabilities defs. for index pattern
-show_fields                                    # Return a list of fields in a given index pattern
-show_field_count                               # Return a count of fields in a given index pattern
+show_field_names                               # Return a list of fields in a given index pattern
+show_field_counts                              # Return a count of fields in a given index pattern
 
 #13----------------------------------------------
 # node exclude/include funcs
