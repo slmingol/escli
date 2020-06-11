@@ -214,6 +214,8 @@ showcfg_idx_stats
 show_idx_version_cnts
 show_idx_mappings
 show_field_capabilities
+show_fields_multiple_defs_summary
+show_fields_multiple_defs_details
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -386,6 +388,8 @@ show_idx_mappings                              # show an index's _mappings (flat
 # field funcs
 ##-----------------------------------------------
 show_field_capabilities                        # show field capabilities (type, searchable, aggregatable) for index pattern
+show_fields_multiple_defs_summary              # list of fields with multipe capabilities defs. for index pattern
+show_fields_multiple_defs_details              # detailed view of fields with multipe capabilities defs. for index pattern
 
 #13----------------------------------------------
 # node exclude/include funcs

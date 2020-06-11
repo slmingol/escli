@@ -1733,6 +1733,48 @@ show_field_capabilities () {
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-field-caps.html
 }
 
+show_fields_multiple_defs_summary () {
+    # list of fields with multipe capabilities defs. for index pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    colWidth="50"
+
+    printf "\n\n"
+    (
+        printf "field capabilityDefCount\n"
+        printf -- "----- ------------------\n"
+        ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&pretty' \
+            | jq -r '.fields | to_entries | .[] | .key, (.value | length)' \
+            | paste - - \
+            | grep -v 1
+    ) | column -t
+    printf "\n\n"
+}
+
+show_fields_multiple_defs_details () {
+    # detailed view of fields with multipe capabilities defs. for index pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    colWidth="50"
+
+    problemFields="$(show_fields_multiple_defs "$env" "$idxArg" | grep -vE '^$|field|^---' | awk '{print $1}')"
+
+    printf "\n\n"
+    for field in $problemFields; do
+        printf "[FIELD: %s]\n" "$field"
+        printf "%s\n" "$(printf -- '-%.0s' $(seq 1 ${colWidth}))"
+
+        ${escmd[$env]} GET ${idxArg}"/_field_caps?fields=${field}&pretty" \
+            | jq -r ".fields | .\"${field}\""
+
+        printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+    done
+    printf "\n\n"
+}
 
 
 #13----------------------------------------------
