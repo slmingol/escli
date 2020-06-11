@@ -351,6 +351,17 @@ usage_chk10 () {
         && return 1
 }
 
+usage_chk11 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
+    local env="$1"
+    local idxArg="$2"
+    local numShards="$3"
+
+    [[ $env =~ [lpc] && $idxArg != '' && ( $numShards =~ ^[-]*[0-9]{1,2}$ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx pattern> <num shards>\n\n" \
+        && return 1
+}
+
 
 
 #3-----------------------------------------------
@@ -990,6 +1001,29 @@ disable_readonly_idxs () {
 	EOM
     )
     ${escmd[$env]} PUT '_all/_settings' -d "$ALLOWDEL"
+}
+
+set_shards_per_node_idx () {
+    # set index.routing.allocation.total_shards_per_node = X
+    local env="$1"
+    local idxArg="$2"
+    local numShards="$3"
+    usage_chk11 "$env" "$idxArg" "$numShards" || return 1
+    SHARDSNODEFIELD=$(cat <<-EOM
+        {
+         "index": {
+           "routing": {
+             "allocation": {
+               "total_shards_per_node": "$numShards"
+             }
+            }
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$SHARDSNODEFIELD"
+
+    #REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/allocation-total-shards.html
 }
 
 show_readonly_idxs () {

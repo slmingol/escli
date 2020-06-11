@@ -171,6 +171,7 @@ enable_readonly_idx_pattern
 disable_readonly_idx_pattern
 enable_readonly_idxs
 disable_readonly_idxs
+set_shards_per_node_idx
 show_readonly_idxs
 show_readonly_idxs_full
 clear_readonlyallowdel_idxs
@@ -325,6 +326,7 @@ enable_readonly_idx_pattern                    # set index read_only flag for pa
 disable_readonly_idx_pattern                   # clear index read_only flag for pattern of indices
 enable_readonly_idxs                           # set index read_only flag
 disable_readonly_idxs                          # clear index read_only flag
+set_shards_per_node_idx                        # set index.routing.allocation.total_shards_per_node = X
 show_readonly_idxs                             # show indexes' read_only setting which are enabled (true)
 show_readonly_idxs_full                        # show indexes' read_only setting for all indices
 clear_readonlyallowdel_idxs                    # clear read_only_allow_delete flag
