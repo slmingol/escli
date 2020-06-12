@@ -177,6 +177,7 @@ clear_readonlyallowdel_idxs
 set_idx_default_field
 set_tmplate_default_field
 set_idx_shards_per_node
+set_idx_max_docvalue_fields_search
 set_idx_num_replicas_to_X
 estop
 estop_recovery
@@ -339,6 +340,7 @@ clear_readonlyallowdel_idxs                    # clear read_only_allow_delete fl
 set_idx_default_field                          # set index.query.default_field => [ "*" ]
 set_tmplate_default_field                      # set template index.query.default_field => [ "*" ]
 set_idx_shards_per_node                        # set index.routing.allocation.total_shards_per_node = X
+set_idx_max_docvalue_fields_search             # set index.max_docvalue_fields_search = X
 set_idx_num_replicas_to_X                      # set an index's number_of_replicas to X
 
 #9-----------------------------------------------

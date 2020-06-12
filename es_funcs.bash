@@ -375,6 +375,17 @@ usage_chk12 () {
         && return 1
 }
 
+usage_chk13 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index pattern, and 3rd is a integer)
+    local env="$1"
+    local idxArg="$2"
+    local maxNum="$3"
+
+    [[ $env =~ [lpc] && $idxArg != '' && ( $maxNum =~ ^[0-9]{1,3}$ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx base type> <max number>\n\n" \
+        && return 1
+}
+
 
 
 #3-----------------------------------------------
@@ -1110,6 +1121,27 @@ set_idx_shards_per_node () {
 	EOM
     )
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$SHARDSNODEFIELD"
+
+    # REF:
+    #   - https://www.elastic.co/guide/en/elasticsearch/reference/current/allocation-total-shards.html
+    #   - https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
+}
+
+set_idx_max_docvalue_fields_search () {
+    # set index.max_docvalue_fields_search = X
+    local env="$1"
+    local idxArg="$2"
+    local maxDocvalue="$3"
+    usage_chk13 "$env" "$idxArg" "$maxDocvalue" || return 1
+    MAXDOCVALFIELD=$(cat <<-EOM
+        {
+         "index": {
+            "max_docvalue_fields_search": "$maxDocvalue"
+          }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "${idxArg}/_settings" -d "$MAXDOCVALFIELD"
 
     # REF:
     #   - https://www.elastic.co/guide/en/elasticsearch/reference/current/allocation-total-shards.html
