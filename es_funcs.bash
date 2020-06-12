@@ -1740,19 +1740,53 @@ show_field_capabilities () {
 
     colWidth="120"
 
+    fieldsOutput="$(${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&pretty')"
+
     printf "\n\n"
+    printf "======================\n"
+    printf "Field definitions: [1]\n"
+    printf "======================\n\n"
     (
         printf "field type searchable aggregatable\n"
         printf -- "----- ---- ---------- ------------\n"
-        ${escmd[$env]} GET ${idxArg}'/_field_caps?fields=*&pretty' \
-            | jq '.fields' \
-            | paste - - - - - - - \
-            | $sedCmd 's/:[ \t]\+{.*{//g;s/^{[ \t]\+//g;s/^[ \t]\+},[ \t]\+//g;s/[ \t]\+}$//g;s/[ \t]\+}[ \t]\+}//g' \
-            | $sedCmd 's/"type":\|"searchable":\|"aggregatable":\|"\|,//g' \
+        echo "$fieldsOutput" \
+            | jq -c '.fields | to_entries[] | [.key, .value[].type, .value[].searchable, .value[].aggregatable]' \
+            | column -t -s'[],"' \
+            | awk 'NF == 4 {print $1,$2,$3,$4}' \
             | sort -k1,1
     ) | column -t
-
     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+
+    printf "\n\n"
+    printf "======================\n"
+    printf "Field definitions: [2]\n"
+    printf "======================\n\n"
+    (
+        printf "field type searchable aggregatable type searchable aggregatable\n"
+        printf -- "----- ---- ---------- ------------ ---- ---------- ------------\n"
+        echo "$fieldsOutput" \
+            | jq -c '.fields | to_entries[] | [.key, .value[].type, .value[].searchable, .value[].aggregatable]' \
+            | column -t -s'[],"' \
+            | awk 'NF == 7 {print $1,$2,$4,$6,$3,$5,$7}' \
+            | sort -k1,1
+    ) | column -t
+    printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+
+    printf "\n\n"
+    printf "======================\n"
+    printf "Field definitions: [3]\n"
+    printf "======================\n\n"
+    (
+        printf "field type searchable aggregatable type searchable aggregatable type searchable aggregatable\n"
+        printf -- "----- ---- ---------- ------------ ---- ---------- ------------ ---- ---------- ------------\n"
+        echo "$fieldsOutput" \
+            | jq -c '.fields | to_entries[] | [.key, .value[].type, .value[].searchable, .value[].aggregatable]' \
+            | column -t -s'[],"' \
+            | awk 'NF == 10 {print $1,$2,$5,$8,$3,$6,$9,$4,$7,$10}' \
+            | sort -k1,1
+    ) | column -t
+    printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
+
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-field-caps.html
 }
 
