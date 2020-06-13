@@ -973,6 +973,8 @@ enable_readonly_idx_pattern () {
 	EOM
     )
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DISALLOWDEL"
+
+    #REF: https://www.elastic.co/guide/en/elasticsearch/reference/7.7/index-modules.html
 }
 
 disable_readonly_idx_pattern () {
@@ -1778,7 +1780,7 @@ show_field_capabilities () {
     printf "======================\n"
     printf "Field definitions: [1]\n"
     printf "======================\n\n"
-    (
+    output1="$(
         printf "field type searchable aggregatable\n"
         printf -- "----- ---- ---------- ------------\n"
         echo "$fieldsOutput" \
@@ -1786,14 +1788,15 @@ show_field_capabilities () {
             | column -t -s'[],"' \
             | awk 'NF == 4 {print $1,$2,$3,$4}' \
             | sort -k1,1
-    ) | column -t
+    )"
+    echo "$output1" | column -t
     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
 
     printf "\n\n"
     printf "======================\n"
     printf "Field definitions: [2]\n"
     printf "======================\n\n"
-    (
+    output2="$(
         printf "field type searchable aggregatable type searchable aggregatable\n"
         printf -- "----- ---- ---------- ------------ ---- ---------- ------------\n"
         echo "$fieldsOutput" \
@@ -1801,14 +1804,15 @@ show_field_capabilities () {
             | column -t -s'[],"' \
             | awk 'NF == 7 {print $1,$2,$4,$6,$3,$5,$7}' \
             | sort -k1,1
-    ) | column -t
+    )"
+    echo "$output2" | column -t
     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
 
     printf "\n\n"
     printf "======================\n"
     printf "Field definitions: [3]\n"
     printf "======================\n\n"
-    (
+    output3="$(
         printf "field type searchable aggregatable type searchable aggregatable type searchable aggregatable\n"
         printf -- "----- ---- ---------- ------------ ---- ---------- ------------ ---- ---------- ------------\n"
         echo "$fieldsOutput" \
@@ -1816,7 +1820,8 @@ show_field_capabilities () {
             | column -t -s'[],"' \
             | awk 'NF == 10 {print $1,$2,$5,$8,$3,$6,$9,$4,$7,$10}' \
             | sort -k1,1
-    ) | column -t
+    )"
+    echo "$output3" | column -t
     printf "%s\n\n\n" "$(printf '=%.0s' $(seq 1 ${colWidth}))"
 
     # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-field-caps.html
