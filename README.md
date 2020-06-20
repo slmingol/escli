@@ -215,6 +215,7 @@ showcfg_idx_cfgs
 showcfg_idx_stats
 show_idx_version_cnts
 show_idx_mappings
+#show_idx_rate
 show_field_capabilities
 show_fields_multiple_defs_summary
 show_fields_multiple_defs_details
@@ -240,6 +241,16 @@ calc_daily_docs_hdd_overXdays
 calc_idx_type_avgs_overXdays
 calc_num_nodes_overXdays
 ###
+list_ilm_policies
+show_ilm_policy
+show_ilm_policies
+list_aliases
+show_alias_details
+show_alias_details_excludeEmpty
+list_writable_ilm_idxs_on_alias
+show_writable_ilm_idxs_on_alias_details
+explain_indexes_ilm
+show_ilm_components_for_idx
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -436,6 +447,20 @@ calc_idx_type_avgs_overXdays                   # calc. the avg number of docs & 
 calc_num_nodes_overXdays                       # calc. the HDD storage required based on idx types usage over X days
 
 #17----------------------------------------------
+# ilm funcs
+##-----------------------------------------------
+list_ilm_policies                              # show all _ilm/policy names
+show_ilm_policy                                # show a single _ilm/policy/<policy> details
+show_ilm_policies                              # show all _ilm/policy details
+list_aliases                                   # show all _alias names
+show_alias_details                             # show all _alias details
+show_alias_details_excludeEmpty                # show all _alias that are not '"aliases": {}'
+list_writable_ilm_idxs_on_alias                # show names of idxs where 'is_write_index: true' on aliases
+show_writable_ilm_idxs_on_alias_details        # show verbose which idxs are 'is_write_index: true' on aliases
+explain_indexes_ilm                            # explain ilm for given indexes '<index pattern>/_ilm/explain'
+show_ilm_components_for_idx                    # show ilm for given index '<index pattern>/_ilm/explain'
+
+#18----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                 # show all template details

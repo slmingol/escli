@@ -386,6 +386,16 @@ usage_chk13 () {
         && return 1
 }
 
+usage_chk14 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a policy name)
+    local env="$1"
+    local policyArg="$2"
+
+    [[ $env =~ [lpc] && $policyArg != '' ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <policy name>\n\n" \
+        && return 1
+}
+
 
 
 #3-----------------------------------------------
@@ -1761,6 +1771,30 @@ show_idx_mappings () {
         | less -r
 }
 
+#show_idx_rate () {
+#    # show an index's _mappings (flattened) '<index name>/_mapping'
+#    local env="$1"
+#    #local idxArg="$2"
+#    #usage_chk3 "$env" "$idxArg" || return 1
+#    
+#    declare -A tick
+#    declare -A tock
+#    
+#    toggle=0
+#
+#
+#    ${escmd[$env]} GET '_stats?filter_path=indices.*2020\.06\.18.total.indexing.index_total&pretty' \
+#        | jq -c '.indices | to_entries | .[] | .key, .value.total.indexing.index_total' | paste - - | column -t
+#
+##    ${escmd[$env]} GET ${idxArg}'/_mapping?pretty' \
+##        | jq -C '
+##            .[].mappings | .properties 
+##            | [leaf_paths as $path | {"key": $path | join("."), "value": getpath($path)}] 
+##            | from_entries
+##          ' \
+##        | less -r
+#}
+
 
 
 #12----------------------------------------------
@@ -2359,6 +2393,115 @@ calc_num_nodes_overXdays () {
 
 
 #17----------------------------------------------
+# ilm funcs
+##-----------------------------------------------
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.6/indices-rollover-index.html#indices-rollover-is-write-index
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-explain-lifecycle.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/master/ilm-get-lifecycle.html
+
+list_ilm_policies () {
+    # show all _ilm/policy names
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    show_ilm_policies "$env" \
+        | jq -S -r 'keys[]'
+}
+
+show_ilm_policy () {
+    # show a single _ilm/policy/<policy> details
+    local env="$1"
+    local policyArg="$2"
+    usage_chk14 "$env" "$policyArg" || return 1
+    show_ilm_policies "$env" | jq ".\"$policyArg\""
+}
+
+show_ilm_policies () {
+    # show all _ilm/policy details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd["$env"]} GET "_ilm/policy?pretty&human" | jq -S .
+}
+
+list_aliases () {
+    # show all _alias names
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    list_alias_details "$env" | jq -r 'keys[]'
+}
+
+show_alias_details () {
+    # show all _alias details
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd["$env"]} GET '_alias?pretty&human' | jq -S .
+}
+
+show_alias_details_excludeEmpty () {
+    # show all _alias that are not '"aliases": {}'
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    list_alias_details "$env" \
+        | jq 'to_entries[] | if .value.aliases != {} then (.) else empty end'
+
+}
+
+list_writable_ilm_idxs_on_alias () {
+    # show names of idxs where 'is_write_index: true' on aliases
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    list_writable_ilm_idxs_on_alias_details "$env" | jq -r .key
+}
+
+show_writable_ilm_idxs_on_alias_details () {
+    # show verbose which idxs are 'is_write_index: true' on aliases
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd["$env"]} GET '_alias?pretty&human' \
+        | jq -S . \
+        | jq 'to_entries[]
+            | if .value.aliases[].is_write_index == true then (.) else empty end'
+}
+
+explain_indexes_ilm () {
+    # explain ilm for given indexes '<index pattern>/_ilm/explain'
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    ${escmd["$env"]} GET "$idxArg"'/_ilm/explain?pretty&human' \
+        | jq -S .indices
+}
+
+show_ilm_components_for_idx () {
+    # show ilm for given index '<index pattern>/_ilm/explain'
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+    explainOutput=$(explain_indexes_ilm "$env" "$idxArg")
+    policy=$(echo "$explainOutput" | jq -r '.[].policy')
+    policyOutput=$(show_ilm_policy "$env" "$policy")
+    aliasOutput=$(show_alias_details "$env" | jq ".\"$idxArg\"")
+    printf "\nExplain Index ILM"
+    printf "\n================="
+    printf "\n---> [$idxArg]"
+    printf "\n=================\n"
+    echo "$explainOutput"
+    printf "\nExplain ILM Policy"
+    printf "\n=================="
+    printf "\n---> [$policy]"
+    printf "\n==================\n"
+    echo "$policyOutput"
+    printf "\nExplain Index Alias"
+    printf "\n==================="
+    printf "\n---> [$idxArg]"
+    printf "\n===================\n"
+    echo "$aliasOutput"
+    printf "\n\n"
+}
+
+
+
+#18----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {
@@ -3372,3 +3515,117 @@ show_template () {
 #    20 lab-rdu-es-data-01a
 #    25 lab-rdu-es-data-01b
 #    49 lab-rdu-es-data-01c
+
+# $ ./esp GET '_nodes/stats?pretty'| jq '.nodes[] | { node: .name, index: .indices.indexing } | .[]' | paste - - - - - - - - - - - - -  | gsed 's/"//g;s/{[ \t]\+//g;s/,[ \t]\+/ /g' | column -t
+# rdu-es-data-01m    index_total:  17340209737  index_time_in_millis:  8763096199   index_current:  5   index_failed:  0   delete_total:  122852301  delete_time_in_millis:  24992549  delete_current:  0  noop_update_total:  39  is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01d    index_total:  16528822541  index_time_in_millis:  7804251257   index_current:  0   index_failed:  0   delete_total:  100905635  delete_time_in_millis:  20564648  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01e    index_total:  18400978106  index_time_in_millis:  9347224204   index_current:  12  index_failed:  0   delete_total:  100919588  delete_time_in_millis:  20624199  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01j    index_total:  19401955146  index_time_in_millis:  9435537893   index_current:  20  index_failed:  0   delete_total:  122846351  delete_time_in_millis:  23742014  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01q    index_total:  16523346552  index_time_in_millis:  8067280641   index_current:  2   index_failed:  0   delete_total:  122844407  delete_time_in_millis:  23976502  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01l    index_total:  17303182235  index_time_in_millis:  8824209504   index_current:  0   index_failed:  0   delete_total:  144761287  delete_time_in_millis:  32266651  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01r    index_total:  17076127916  index_time_in_millis:  8339333655   index_current:  0   index_failed:  0   delete_total:  122828558  delete_time_in_millis:  23829446  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-ml-01b      index_total:  0            index_time_in_millis:  0            index_current:  0   index_failed:  0   delete_total:  0          delete_time_in_millis:  0         delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-master-01b  index_total:  0            index_time_in_millis:  0            index_current:  0   index_failed:  0   delete_total:  0          delete_time_in_millis:  0         delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01a    index_total:  17828784069  index_time_in_millis:  4603999941   index_current:  3   index_failed:  1   delete_total:  223745370  delete_time_in_millis:  32606955  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  1        }
+# rdu-es-master-01c  index_total:  0            index_time_in_millis:  0            index_current:  0   index_failed:  0   delete_total:  0          delete_time_in_millis:  0         delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-master-01a  index_total:  0            index_time_in_millis:  0            index_current:  0   index_failed:  0   delete_total:  0          delete_time_in_millis:  0         delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01f    index_total:  19480369387  index_time_in_millis:  9016096188   index_current:  4   index_failed:  0   delete_total:  21923979   delete_time_in_millis:  4807953   delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01h    index_total:  17488867391  index_time_in_millis:  10152975830  index_current:  5   index_failed:  0   delete_total:  122827863  delete_time_in_millis:  22078827  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  4337300  }
+# rdu-es-data-01c    index_total:  19665262680  index_time_in_millis:  5100575761   index_current:  4   index_failed:  0   delete_total:  1175       delete_time_in_millis:  8168      delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  12397    }
+# rdu-es-data-01p    index_total:  15324274305  index_time_in_millis:  8017721461   index_current:  0   index_failed:  0   delete_total:  205233741  delete_time_in_millis:  39105297  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  29       }
+# rdu-es-data-01b    index_total:  21525872385  index_time_in_millis:  5247319262   index_current:  0   index_failed:  36  delete_total:  100890436  delete_time_in_millis:  15342237  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  3        }
+# rdu-es-data-01i    index_total:  17694571358  index_time_in_millis:  8604388078   index_current:  0   index_failed:  2   delete_total:  179897053  delete_time_in_millis:  32666649  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  50       }
+# rdu-es-data-01g    index_total:  15852412767  index_time_in_millis:  9232812372   index_current:  1   index_failed:  0   delete_total:  122843363  delete_time_in_millis:  22194040  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01n    index_total:  16193296606  index_time_in_millis:  8406483992   index_current:  0   index_failed:  0   delete_total:  179899560  delete_time_in_millis:  35420132  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01k    index_total:  16912973545  index_time_in_millis:  8052405562   index_current:  16  index_failed:  0   delete_total:  122818206  delete_time_in_millis:  23637167  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  2        }
+# rdu-es-ml-01a      index_total:  0            index_time_in_millis:  0            index_current:  0   index_failed:  0   delete_total:  0          delete_time_in_millis:  0         delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  0        }
+# rdu-es-data-01o    index_total:  15492734312  index_time_in_millis:  8688895450   index_current:  24  index_failed:  56  delete_total:  122846586  delete_time_in_millis:  24127283  delete_current:  0  noop_update_total:  0   is_throttled:  false  throttle_time_in_millis:  31       }
+
+# $ ./esl GET 'filebeat-ilm-6.5.1-*/_search?filter_path=hits.hits._source.kubernetes.labels.app.*,hits.hits&pretty' -d '
+# {
+#   "query": {
+#     "exists": {
+#       "field": "kubernetes.labels.app.*"
+#     }
+#   }
+# }' | head -50
+# {
+#   "hits" : {
+#     "hits" : [
+#       {
+#         "_index" : "filebeat-ilm-6.5.1-2020.06.05-000006",
+#         "_type" : "_doc",
+#         "_id" : "0f8Xg3IBSMCX2oZLeUj8",
+#         "_score" : 1.0,
+#         "_source" : {
+#           "message" : "time=\"2020-06-05T05:59:03Z\" level=info msg=\"Update successful\" application=dev-ops-argo-rollouts-controller",
+#           "input" : {
+#             "type" : "docker"
+#           },
+#           "stream" : "stderr",
+#           "kubernetes" : {
+#             "replicaset" : {
+#               "name" : "atlas-argo-cd-argocd-application-controller-68f74b7bbc"
+#             },
+#             "pod" : {
+#               "name" : "atlas-argo-cd-argocd-application-controller-68f74b7bbc-z25xw"
+#             },
+#             "container" : {
+#               "name" : "application-controller"
+#             },
+#             "cluster" : {
+#               "site" : "cluster2.lab1",
+#               "name" : "cluster2"
+#             },
+#             "node" : {
+#               "name" : "ocp-app-02a.lab1.bandwidthclec.local"
+#             },
+#             "labels" : {
+#               "helm" : {
+#                 "sh/chart" : "argo-cd-2.2.16"
+#               },
+#               "app" : {
+#                 "kubernetes" : {
+#                   "io/component" : "application-controller",
+#                   "io/managed-by" : "Helm",
+#                   "io/part-of" : "argocd",
+#                   "io/instance" : "atlas-argo-cd",
+#                   "io/name" : "argocd-application-controller",
+#                   "io/version" : "v1.5.4"
+#                 }
+#               },
+#               "pod-template-hash" : "2493063667"
+#             },
+#             "namespace" : "atlas"
+#           },
+#           "source" : "/var/lib/docker/containers/fbf01a6098587428f48d8b9b9ff06e3bc7d5d55bf9ff2920ee4fd40ca205c06d/fbf01a6098587428f48d8b9b9ff06e3bc7d5d55bf9ff2920ee4fd40ca205c06d-json.log",
+
+# $ ./esp GET '*/_stats/indexing?pretty&human&filter_path=**.total.indexing.index_time' | jq -rc '.indices | to_entries | .[]'  | sed 's/"value":{"total":{"indexing":{"index_time"://g;s/}}}}//g;s/{//g' | column -t -s, |grep 'd"' | sed 's/"//g;s/d$//g' | sort -k2,2g | tail
+# key:filebeat-6.5.1-2020.06.08          13
+# key:filebeat-6.5.1-2020.06.02          14.8
+# key:filebeat-6.5.1-2020.06.10          16.9
+# key:filebeat-6.5.1-2020.06.09          18.1
+# key:filebeat-6.5.1-2020.06.11          18.4
+# key:filebeat-6.5.1-2020.05.28          18.7
+# key:filebeat-6.5.1-2020.06.15          18.7
+# key:filebeat-6.5.1-2020.06.12          20
+# key:filebeat-6.5.1-2020.06.17          22.3
+# key:filebeat-6.5.1-2020.06.16          22.8
+
+# $ ./esp GET '_stats?filter_path=indices.*2020\.06\.18.total.indexing.index_total&pretty' | jq -c '.indices | to_entries | .[] | .key, .value.total.indexing.index_total' | paste - - | column -t
+# "f5-2020.06.18"                      76914664
+# "filebeat-6.5.1-2020.06.18"          2413382264
+# "messaging-6.5.1-2020.06.18"         493254369
+# ".monitoring-logstash-7-2020.06.18"  2157038
+# "metricbeat-6.2.1-2020.06.18"        35179078
+# "packetbeat-default-2020.06.18"      255150454
+# "messaging-default-2020.06.18"       160051523
+# "filebeat-default-2020.06.18"        1676527
+# ".monitoring-es-7-2020.06.18"        46080591
+# "metricbeat-6.5.1-2020.06.18"        964294260
+# ".monitoring-kibana-7-2020.06.18"    31260
+# ".watcher-history-10-2020.06.18"     100480
+# "heartbeat-7.5.1-2020.06.18"         37371674
+# "syslog-2020.06.18"                  361189510
+# "metricbeat-6.2.2-2020.06.18"        19173066
+# "metricbeat-default-2020.06.18"      875255
