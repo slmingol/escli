@@ -2481,21 +2481,27 @@ show_ilm_components_for_idx () {
     policy=$(echo "$explainOutput" | jq -r '.[].policy')
     policyOutput=$(show_ilm_policy "$env" "$policy")
     aliasOutput=$(show_alias_details "$env" | jq ".\"$idxArg\"")
-    printf "\nExplain Index ILM"
-    printf "\n================="
-    printf "\n---> [$idxArg]"
-    printf "\n=================\n"
+
+    divider=$(printf "%s\n" "$(printf '=%.0s' {1..100})")
+
+    printf "\nExplain Index ILM\n"
+	printf "%s\n" "$divider"
+    printf -- "--> index: [$idxArg] <--\n"
+	printf "%s\n" "$divider"
     echo "$explainOutput"
-    printf "\nExplain ILM Policy"
-    printf "\n=================="
-    printf "\n---> [$policy]"
-    printf "\n==================\n"
+
+    printf "\nExplain ILM Policy\n"
+	printf "%s\n" "$divider"
+    printf -- "--> policy: [$policy] <--\n"
+	printf "%s\n" "$divider"
     echo "$policyOutput"
-    printf "\nExplain Index Alias"
-    printf "\n==================="
-    printf "\n---> [$idxArg]"
-    printf "\n===================\n"
+
+    printf "\nExplain Index Alias\n"
+	printf "%s\n" "$divider"
+    printf -- "--> alias: [$idxArg] <--\n"
+	printf "%s\n" "$divider"
     echo "$aliasOutput"
+
     printf "\n\n"
 }
 
