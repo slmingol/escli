@@ -2450,7 +2450,7 @@ list_writable_ilm_idxs_on_alias () {
     # show names of idxs where 'is_write_index: true' on aliases
     local env="$1"
     usage_chk1 "$env" || return 1
-    list_writable_ilm_idxs_on_alias_details "$env" | jq -r .key
+    show_writable_ilm_idxs_on_alias_details "$env" | jq -r .key
 }
 
 show_writable_ilm_idxs_on_alias_details () {
