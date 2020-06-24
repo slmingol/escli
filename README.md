@@ -165,6 +165,12 @@ show_balance_throttle
 increase_balance_throttle_XXXmb
 reset_balance_throttle
 change_allocation_threshold
+show_node_concurrent_recoveries
+increase_node_concurrent_recoveries
+reset_node_concurrent_recoveries
+show_cluster_concurrent_rebalance
+increase_cluster_concurrent_rebalance
+reset_cluster_concurrent_rebalance
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
@@ -335,6 +341,12 @@ show_balance_throttle                          # show routing allocations for ba
 increase_balance_throttle_XXXmb                # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
 reset_balance_throttle                         # reset routing allocations for balancing & recoveries (throttle default)
 change_allocation_threshold                    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
+show_node_concurrent_recoveries                # show cluster.routing.allocation.node_concurrent_recoveries
+increase_node_concurrent_recoveries            # change cluster.routing.allocation.node_concurrent_recoveries
+reset_node_concurrent_recoveries               # reset cluster.routing.allocation.node_concurrent_recoveries
+show_cluster_concurrent_rebalance              # show cluster.routing.allocation.cluster_concurrent_rebalance
+increase_cluster_concurrent_rebalance          # change cluster.routing.allocation.cluster_concurrent_rebalance
+reset_cluster_concurrent_rebalance             # reset cluster.routing.allocation.cluster_concurrent_rebalance
 
 #8-----------------------------------------------
 # recovery funcs

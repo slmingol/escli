@@ -328,7 +328,7 @@ usage_chk8 () {
 }
 
 usage_chk9 () {
-    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer)
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer - size in MB)
     local env="$1"
     local size="$2"
 
@@ -393,6 +393,17 @@ usage_chk14 () {
 
     [[ $env =~ [lpc] && $policyArg != '' ]] && return 0 || \
         printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <policy name>\n\n" \
+        && return 1
+}
+
+usage_chk15 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer b/w 2-10)
+    local env="$1"
+    local num="$2"
+
+    [[ $env =~ [lpc] ]] && (( num >= 2 && num <= 10 )) && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <number>\n\n" \
+        && printf "  NOTE: ...minimum is 2, the max. 10!...\n\n\n" \
         && return 1
 }
 
@@ -943,6 +954,94 @@ change_allocation_threshold () {
     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$ALLOC")
     #showcfg_cluster "$env" | jq .persistent
     showcfg_shard_allocations "$env"
+}
+
+show_node_concurrent_recoveries () {
+    # show cluster.routing.allocation.node_concurrent_recoveries
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\n\n"
+    showcfg_cluster "$env" | grep 'concurrent.*recoveries'
+    printf "\n\n"
+}
+
+increase_node_concurrent_recoveries () {
+    # change cluster.routing.allocation.node_concurrent_recoveries
+    local env="$1"
+    local recoveries="$2"
+    usage_chk15 "$env" "$recoveries" || return 1
+    printf "\n\n"
+    printf "NOTE: The default 'cluster.routing.allocation.node_concurrent_recoveries' == 2, to reset to defaults use 'reset_node_concurrent_recoveries'\n\n"
+    RECOVINC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.node_concurrent_recoveries" : "${recoveries}"
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$RECOVINC")
+    show_node_concurrent_recoveries "$env"
+}
+
+reset_node_concurrent_recoveries () {
+    # reset cluster.routing.allocation.node_concurrent_recoveries
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    RECOVRES=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.node_concurrent_recoveries" : null
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$RECOVRES")
+    show_node_concurrent_recoveries "$env"
+}
+
+show_cluster_concurrent_rebalance () {
+    # show cluster.routing.allocation.cluster_concurrent_rebalance
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\n\n"
+    showcfg_cluster "$env" | grep 'concurrent_rebalance'
+    printf "\n\n"
+}
+
+increase_cluster_concurrent_rebalance () {
+    # change cluster.routing.allocation.cluster_concurrent_rebalance
+    local env="$1"
+    local rebalance="$2"
+    usage_chk15 "$env" "$rebalance" || return 1
+    printf "\n\n"
+    printf "NOTE: The default 'cluster.routing.allocation.cluster_concurrent_rebalance' == 2, to reset to defaults use 'reset_cluster_concurrent_rebalance'\n\n"
+    REBALINC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : "${rebalance}"
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$REBALINC")
+    show_cluster_concurrent_rebalance "$env"
+}
+
+reset_cluster_concurrent_rebalance () {
+    # reset cluster.routing.allocation.cluster_concurrent_rebalance
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    REBALRES=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : null
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$REBALRES")
+    show_cluster_concurrent_rebalance "$env"
 }
 
 
