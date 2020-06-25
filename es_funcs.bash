@@ -872,41 +872,38 @@ show_idx_with_oversized_shards_details () {
 #7-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
-show_balance_throttle () {
-    # show routing allocations for balancing & recoveries (current)
+show_rebalance_throttle () {
+    # show routing allocations for rebalancing & recoveries (current)
     local env="$1"
     usage_chk1 "$env" || return 1
     showcfg_cluster "$env" | jq '.' | grep -E "allocation.(node|cluster|type)|recovery.max_bytes_per_sec"
 }
 
-#D increase_balance_throttle () {
-#D     # increase routing allocations for balancing & recoveries (throttle open)
-#D     local env="$1"
-#D     usage_chk1 "$env" || return 1
-#D     THROTTLEINC=$(cat <<-EOM
-#D         {
-#D             "persistent": {
-#D                 "cluster.routing.allocation.cluster_concurrent_rebalance" : "10",
-#D                 "cluster.routing.allocation.node_concurrent_incoming_recoveries" : "5",
-#D                 "cluster.routing.allocation.node_concurrent_outgoing_recoveries" : "5",
-#D                 "cluster.routing.allocation.node_concurrent_recoveries" : "20",
-#D                 "cluster.routing.allocation.node_initial_primaries_recoveries" : "10",
-#D                 "indices.recovery.max_bytes_per_sec" : "2000mb"
-#D             }
-#D         }
-#D 	EOM
-#D     )
-#D     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
-#D     showcfg_cluster "$env" | jq .persistent
-#D }
+show_node_concurrent_recoveries () {
+    # show cluster.routing.allocation.node_concurrent_recoveries
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\n\n"
+    showcfg_cluster "$env" | grep 'concurrent.*recoveries'
+    printf "\n\n"
+}
 
-increase_balance_throttle_XXXmb () {
-    # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
+show_cluster_concurrent_rebalance () {
+    # show cluster.routing.allocation.cluster_concurrent_rebalance
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\n\n"
+    showcfg_cluster "$env" | grep 'concurrent_rebalance'
+    printf "\n\n"
+}
+
+increase_rebalance_throttle_XXXmb () {
+    # change bytes_per_sec routing allocations for rebalancing & recoveries (throttle, just b/w)
     local env="$1"
     local size="$2"
     usage_chk9 "$env" "$size" || return 1
     printf "\n\n"
-    printf "NOTE: The default 'indices.recovery.max_bytes_per_sec' == 40mb, to reset to defaults use 'reset_balance_throttle'\n\n"
+    printf "NOTE: The default 'indices.recovery.max_bytes_per_sec' == 40mb, to reset to defaults use 'reset_rebalance_throttle'\n\n"
     THROTTLEINC=$(cat <<-EOM
         {
             "persistent": {
@@ -917,52 +914,6 @@ increase_balance_throttle_XXXmb () {
     )
     cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLEINC")
     showcfg_cluster "$env" | jq .persistent
-}
-
-reset_balance_throttle () {
-    # reset routing allocations for balancing & recoveries (throttle default)
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    THROTTLERES=$(cat <<-EOM
-        {
-            "persistent": {
-                "cluster.routing.allocation.cluster_concurrent_rebalance" : null,
-                "cluster.routing.allocation.node_concurrent_*" : null,
-                "cluster.routing.allocation.node_initial_primaries_recoveries" : null,
-                "indices.recovery.max_bytes_per_sec" : null
-            }
-        }
-	EOM
-    )
-    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLERES")
-    show_balance_throttle "$env"
-    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
-}
-
-change_allocation_threshold () {
-    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    ALLOC=$(cat <<-EOM
-        {
-            "persistent": {
-                "cluster.routing.allocation.balance.threshold"  :   3.0
-            }
-        }
-	EOM
-    )
-    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$ALLOC")
-    #showcfg_cluster "$env" | jq .persistent
-    showcfg_shard_allocations "$env"
-}
-
-show_node_concurrent_recoveries () {
-    # show cluster.routing.allocation.node_concurrent_recoveries
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    printf "\n\n"
-    showcfg_cluster "$env" | grep 'concurrent.*recoveries'
-    printf "\n\n"
 }
 
 increase_node_concurrent_recoveries () {
@@ -984,31 +935,6 @@ increase_node_concurrent_recoveries () {
     show_node_concurrent_recoveries "$env"
 }
 
-reset_node_concurrent_recoveries () {
-    # reset cluster.routing.allocation.node_concurrent_recoveries
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    RECOVRES=$(cat <<-EOM
-        {
-            "persistent": {
-                "cluster.routing.allocation.node_concurrent_recoveries" : null
-            }
-        }
-	EOM
-    )
-    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$RECOVRES")
-    show_node_concurrent_recoveries "$env"
-}
-
-show_cluster_concurrent_rebalance () {
-    # show cluster.routing.allocation.cluster_concurrent_rebalance
-    local env="$1"
-    usage_chk1 "$env" || return 1
-    printf "\n\n"
-    showcfg_cluster "$env" | grep 'concurrent_rebalance'
-    printf "\n\n"
-}
-
 increase_cluster_concurrent_rebalance () {
     # change cluster.routing.allocation.cluster_concurrent_rebalance
     local env="$1"
@@ -1028,6 +954,42 @@ increase_cluster_concurrent_rebalance () {
     show_cluster_concurrent_rebalance "$env"
 }
 
+reset_rebalance_throttle () {
+    # reset routing allocations for rebalancing & recoveries (throttle default)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    THROTTLERES=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.cluster_concurrent_rebalance" : null,
+                "cluster.routing.allocation.node_concurrent_*" : null,
+                "cluster.routing.allocation.node_initial_primaries_recoveries" : null,
+                "indices.recovery.max_bytes_per_sec" : null
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$THROTTLERES")
+    show_rebalance_throttle "$env"
+    # REF: https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-get-settings.html
+}
+
+reset_node_concurrent_recoveries () {
+    # reset cluster.routing.allocation.node_concurrent_recoveries
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    RECOVRES=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.node_concurrent_recoveries" : null
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$RECOVRES")
+    show_node_concurrent_recoveries "$env"
+}
+
 reset_cluster_concurrent_rebalance () {
     # reset cluster.routing.allocation.cluster_concurrent_rebalance
     local env="$1"
@@ -1044,9 +1006,65 @@ reset_cluster_concurrent_rebalance () {
     show_cluster_concurrent_rebalance "$env"
 }
 
+change_allocation_threshold () {
+    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ALLOC=$(cat <<-EOM
+        {
+            "persistent": {
+                "cluster.routing.allocation.balance.threshold"  :   3.0
+            }
+        }
+	EOM
+    )
+    cmdOutput=$(${escmd[$env]} PUT '_cluster/settings' -d "$ALLOC")
+    #showcfg_cluster "$env" | jq .persistent
+    showcfg_shard_allocations "$env"
+}
+
 
 
 #8-----------------------------------------------
+# node recovery funcs
+##-----------------------------------------------
+increase_node_recovery_allocations () {
+    # optimal recovery/rebalance settings when a node gets re-introduced to cluster
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\n\nNOTE: To revert use 'reset_node_recovery_allocations'\n\n"
+    (
+        increase_cluster_concurrent_rebalance "$env" 10
+        increase_node_concurrent_recoveries "$env" 10
+        increase_rebalance_throttle_XXXmb "$env" 950
+    ) > /dev/null 2>&1
+    show_rebalance_throttle "$env"
+    printf "\n\n"
+}
+
+reset_node_recovery_allocations () {
+    # resets to default recovery/rebalance settings
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    printf "\nBEFORE"
+    printf "\n======\n"
+    show_rebalance_throttle "$env"
+
+    (
+        reset_cluster_concurrent_rebalance "$env"
+        reset_node_concurrent_recoveries "$env"
+        reset_rebalance_throttle "$env"
+    ) > /dev/null 2>&1
+
+    printf "\nAFTER"
+    printf "\n======\n"
+    show_rebalance_throttle "$env"
+    printf "\n\n"
+}
+
+
+
+#9-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery () {
@@ -1281,7 +1299,7 @@ set_idx_num_replicas_to_X () {
 
 
 
-#9-----------------------------------------------
+#10-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop () {
@@ -1660,7 +1678,7 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
 
 
 
-#10----------------------------------------------
+#11----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx () {
@@ -1799,7 +1817,7 @@ clear_shard_allocations () {
 
 
 
-#11----------------------------------------------
+#12----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes () {
@@ -1896,7 +1914,7 @@ show_idx_mappings () {
 
 
 
-#12----------------------------------------------
+#13----------------------------------------------
 # field funcs
 ##-----------------------------------------------
 show_field_capabilities () {
@@ -2053,7 +2071,7 @@ show_field_counts () {
     printf "\n\n"
 }
 
-#13----------------------------------------------
+#14----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes () {
@@ -2104,7 +2122,7 @@ clear_excluded_nodes () {
 
 
 
-#14----------------------------------------------
+#15----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami () {
@@ -2167,7 +2185,7 @@ create_bearer_token () {
 
 
 
-#15----------------------------------------------
+#16----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range () {
@@ -2259,7 +2277,7 @@ estail_forcemerge () {
 
 
 
-#16----------------------------------------------
+#17----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays () {
@@ -2491,7 +2509,7 @@ calc_num_nodes_overXdays () {
 
 
 
-#17----------------------------------------------
+#18----------------------------------------------
 # ilm funcs
 ##-----------------------------------------------
 
@@ -2606,7 +2624,7 @@ show_ilm_components_for_idx () {
 
 
 
-#18----------------------------------------------
+#19----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates () {

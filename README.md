@@ -160,17 +160,18 @@ calc_hot_idxs_shard_sweet_spot
 show_shards_biggerthan50gb
 show_idx_with_oversized_shards_summary
 show_idx_with_oversized_shards_details
-show_balance_throttle
-#D
-increase_balance_throttle_XXXmb
-reset_balance_throttle
-change_allocation_threshold
+show_rebalance_throttle
 show_node_concurrent_recoveries
-increase_node_concurrent_recoveries
-reset_node_concurrent_recoveries
 show_cluster_concurrent_rebalance
+increase_rebalance_throttle_XXXmb
+increase_node_concurrent_recoveries
 increase_cluster_concurrent_rebalance
+reset_rebalance_throttle
+reset_node_concurrent_recoveries
 reset_cluster_concurrent_rebalance
+change_allocation_threshold
+increase_node_recovery_allocations
+reset_node_recovery_allocations
 show_recovery
 show_recovery_full
 enable_readonly_idx_pattern
@@ -337,18 +338,24 @@ show_idx_with_oversized_shards_details         # show detailed view of indexes w
 #7-----------------------------------------------
 # increase/decrease relo/recovery throttles
 ##-----------------------------------------------
-show_balance_throttle                          # show routing allocations for balancing & recoveries (current)
-increase_balance_throttle_XXXmb                # increase bytes_per_sec routing allocations for balancing & recoveries (throttle, just b/w)
-reset_balance_throttle                         # reset routing allocations for balancing & recoveries (throttle default)
-change_allocation_threshold                    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
+show_rebalance_throttle                        # show routing allocations for rebalancing & recoveries (current)
 show_node_concurrent_recoveries                # show cluster.routing.allocation.node_concurrent_recoveries
-increase_node_concurrent_recoveries            # change cluster.routing.allocation.node_concurrent_recoveries
-reset_node_concurrent_recoveries               # reset cluster.routing.allocation.node_concurrent_recoveries
 show_cluster_concurrent_rebalance              # show cluster.routing.allocation.cluster_concurrent_rebalance
+increase_rebalance_throttle_XXXmb              # change bytes_per_sec routing allocations for rebalancing & recoveries (throttle, just b/w)
+increase_node_concurrent_recoveries            # change cluster.routing.allocation.node_concurrent_recoveries
 increase_cluster_concurrent_rebalance          # change cluster.routing.allocation.cluster_concurrent_rebalance
+reset_rebalance_throttle                       # reset routing allocations for rebalancing & recoveries (throttle default)
+reset_node_concurrent_recoveries               # reset cluster.routing.allocation.node_concurrent_recoveries
 reset_cluster_concurrent_rebalance             # reset cluster.routing.allocation.cluster_concurrent_rebalance
+change_allocation_threshold                    # override the allocation threshold (cluster.routing.allocation.balance.threshold)
 
 #8-----------------------------------------------
+# node recovery funcs
+##-----------------------------------------------
+increase_node_recovery_allocations             # optimal recovery/rebalance settings when a node gets re-introduced to cluster
+reset_node_recovery_allocations                # resets to default recovery/rebalance settings
+
+#9-----------------------------------------------
 # recovery funcs
 ##-----------------------------------------------
 show_recovery                                  # show a summary of recovery queue
@@ -366,7 +373,7 @@ set_idx_shards_per_node                        # set index.routing.allocation.to
 set_idx_max_docvalue_fields_search             # set index.max_docvalue_fields_search = X
 set_idx_num_replicas_to_X                      # set an index's number_of_replicas to X
 
-#9-----------------------------------------------
+#10-----------------------------------------------
 # health/stat funcs
 ##-----------------------------------------------
 estop                                          # mimics `top` command, watching ES nodes CPU/MEM usage
@@ -391,7 +398,7 @@ show_idx_doc_sources_all_cnts                  # show the total num. docs each h
 show_idx_doc_sources_all_k8sns_cnts            # show the total num. docs each namespace sent to an index
 show_idx_doc_sources_all_k8sns_cnts_hourly     # show the total num. docs each namespace sent to an index
 
-#10----------------------------------------------
+#11----------------------------------------------
 # shard funcs
 ##-----------------------------------------------
 showcfg_num_shards_per_idx                     # show number of shards configured per index template
@@ -403,7 +410,7 @@ enable_shard_allocations                       # allow the allocator to route sh
 disable_shard_allocations                      # disallow the allocator to route shards (cluster.routing.allocation.enable)
 clear_shard_allocations                        # clear the allocator to route shards (cluster.routing.allocation.enable)
 
-#11----------------------------------------------
+#12----------------------------------------------
 # index stat funcs
 ##-----------------------------------------------
 show_idx_sizes                                 # show index sizes sorted (big -> small)
@@ -414,7 +421,7 @@ showcfg_idx_stats                              # show all '<index name>/_stats'
 show_idx_version_cnts                          # show index sizes sorted (big -> small)
 show_idx_mappings                              # show an index's _mappings (flattened) '<index name>/_mapping'
 
-#12----------------------------------------------
+#13----------------------------------------------
 # field funcs
 ##-----------------------------------------------
 show_field_capabilities                        # show field capabilities (type, searchable, aggregatable) for index pattern
@@ -424,14 +431,14 @@ show_field_X_multiple_defs_details             # detailed view of a single field
 show_field_names                               # Return a list of fields in a given index pattern
 show_field_counts                              # Return a count of fields in a given index pattern
 
-#13----------------------------------------------
+#14----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
 show_excluded_nodes                            # show excluded nodes from cluster
 exclude_node_name                              # exclude a node from cluster (node suffix)
 clear_excluded_nodes                           # clear any excluded cluster nodes
 
-#14----------------------------------------------
+#15----------------------------------------------
 # auth funcs
 ##-----------------------------------------------
 eswhoami                                       # show auth info about who am i
@@ -442,7 +449,7 @@ list_auth_rolemappings                         # list all rolemappings
 evict_auth_cred_cache                          # evict/clear users from the user cache
 create_bearer_token                            # create bearer token for user
 
-#15----------------------------------------------
+#16----------------------------------------------
 # k8s namespace funcs
 ##-----------------------------------------------
 del_docs_k8s_ns_range                          # delete k8s namespace docs over a specific time range
@@ -450,7 +457,7 @@ forcemerge_to_expunge_deletes                  # force merge of shards to expung
 estail_deletebyquery                           # watch deletebyquery tasks
 estail_forcemerge                              # watch forcemerges in tasks queue
 
-#16----------------------------------------------
+#17----------------------------------------------
 # capacity planning functions
 ##-----------------------------------------------
 calc_total_docs_hdd_overXdays                  # calc. the total docs & HDD storage used by all indices over X days
@@ -458,7 +465,7 @@ calc_daily_docs_hdd_overXdays                  # calc. the individual daily tota
 calc_idx_type_avgs_overXdays                   # calc. the avg number of docs & HDD storage used per idx types over X days
 calc_num_nodes_overXdays                       # calc. the HDD storage required based on idx types usage over X days
 
-#17----------------------------------------------
+#18----------------------------------------------
 # ilm funcs
 ##-----------------------------------------------
 list_ilm_policies                              # show all _ilm/policy names
@@ -472,7 +479,7 @@ show_writable_ilm_idxs_on_alias_details        # show verbose which idxs are 'is
 explain_indexes_ilm                            # explain ilm for given indexes '<index pattern>/_ilm/explain'
 show_ilm_components_for_idx                    # show ilm for given index '<index pattern>/_ilm/explain'
 
-#18----------------------------------------------
+#19----------------------------------------------
 # template funcs
 ##-----------------------------------------------
 list_templates                                 # show all template details
