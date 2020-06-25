@@ -2526,7 +2526,7 @@ list_aliases () {
     # show all _alias names
     local env="$1"
     usage_chk1 "$env" || return 1
-    list_alias_details "$env" | jq -r 'keys[]'
+    show_alias_details "$env" | jq -r 'keys[]'
 }
 
 show_alias_details () {
