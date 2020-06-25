@@ -407,7 +407,18 @@ usage_chk15 () {
         && return 1
 }
 
+usage_chk16 () {
+    # usage msg for cmds w/ 3 arg (where 2nd arg. is a index, and 3rd is a zero-padded integer)
+    local env="$1"
+    local idxArg="$2"
+    local ilmSuffix="$3"
 
+    [[ $env =~ [lpc] && $idxArg != '' && ( $ilmSuffix =~ ^[0-9]{6}$ ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <index> <index suffix>\n\n" \
+        && printf "  * index: [filebeat-ilm-6.5.1|filebeat-ilm-7.6.2|...]\n\n" \
+        && printf "  * index suffix: [000001|000002|...]\n\n" \
+        && return 1
+}
 
 #3-----------------------------------------------
 # help funcs
@@ -2600,6 +2611,28 @@ show_ilm_components_for_idx () {
     printf -- "--> alias: [$idxArg] <--\n"
 	printf "%s\n" "$divider"
     echo "$aliasOutput"
+
+    printf "\n\n"
+}
+
+bootstrap_ilm_idx () {
+    # creates an index and designates it as the write index for an alias
+    # https://www.elastic.co/guide/en/elasticsearch/reference/7.8/getting-started-index-lifecycle-management.html#ilm-gs-bootstrap
+    local env="$1"
+    local idxArg="$2"
+    local ilmSuffix="$3"
+    usage_chk16 "$env" "$idxArg" "$ilmSuffix" || return 1
+    WRITEALIAS=$(cat <<-EOM
+        {
+            "aliases": {
+                "${idxArg}": {
+                    "is_write_index": true
+                }
+            }
+        }
+	EOM
+    )
+    ${escmd[$env]} PUT "%3C${idxArg}-%7Bnow%2Fd%7D-${ilmSuffix}%3E" -d "$WRITEALIAS"
 
     printf "\n\n"
 }
