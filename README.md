@@ -192,6 +192,8 @@ estop_relo
 estop_tasks
 estop_rejected_writes
 estop_active_threads
+estop_idx_indexing
+estop_node_indexing
 show_health
 show_watermarks
 show_state
@@ -223,6 +225,11 @@ showcfg_idx_stats
 show_idx_version_cnts
 show_idx_mappings
 #show_idx_rate
+clear_idx_cache_fielddata
+clear_idx_cache_query
+clear_idx_cache_request
+clear_idx_cache_all
+list_index_metric_types
 show_field_capabilities
 show_fields_multiple_defs_summary
 show_fields_multiple_defs_details
@@ -258,6 +265,7 @@ list_writable_ilm_idxs_on_alias
 show_writable_ilm_idxs_on_alias_details
 explain_indexes_ilm
 show_ilm_components_for_idx
+bootstrap_ilm_idx
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -382,6 +390,8 @@ estop_relo                                     # watches ES relocations
 estop_tasks                                    # watches ES tasks
 estop_rejected_writes                          # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
 estop_active_threads                           # watches ES thread pools for active/rejected activities
+estop_idx_indexing                             # watches ES indexing activities for indexes
+estop_node_indexing                            # watches ES indexing activities for nodes
 show_health                                    # cluster's health stats
 show_watermarks                                # show watermarks when storage marks readonly
 show_state                                     # shows the state of the indicies' shards (RELO, Translog, etc.)
@@ -420,6 +430,11 @@ showcfg_idx_cfgs                               # show all '<index name>/_setting
 showcfg_idx_stats                              # show all '<index name>/_stats'
 show_idx_version_cnts                          # show index sizes sorted (big -> small)
 show_idx_mappings                              # show an index's _mappings (flattened) '<index name>/_mapping'
+clear_idx_cache_fielddata                      # clear /_cache/clear?fielddata=true
+clear_idx_cache_query                          # clear /_cache/clear?query=true
+clear_idx_cache_request                        # clear /_cache/clear?request=true
+clear_idx_cache_all                            # clear /_cache/clear
+list_index_metric_types                        # list ES index metric types
 
 #13----------------------------------------------
 # field funcs
@@ -478,6 +493,7 @@ list_writable_ilm_idxs_on_alias                # show names of idxs where 'is_wr
 show_writable_ilm_idxs_on_alias_details        # show verbose which idxs are 'is_write_index: true' on aliases
 explain_indexes_ilm                            # explain ilm for given indexes '<index pattern>/_ilm/explain'
 show_ilm_components_for_idx                    # show ilm for given index '<index pattern>/_ilm/explain'
+bootstrap_ilm_idx                              # creates an index and designates it as the write index for an alias
 
 #19----------------------------------------------
 # template funcs

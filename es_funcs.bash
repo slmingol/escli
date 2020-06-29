@@ -1324,7 +1324,7 @@ estop_recovery () {
     # watches the ES recovery queue
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent,translog_ops_recovered,translog_ops,translog_ops_percent&s=target_node,source_node,index' | grep -v done | head -40 | sed 's/[^ ]*es-data-//g' | column -t"
+    watch "${escmd["$env"]} GET '_cat/recovery?bytes=gb&v&h=index,shard,time,type,stage,source_node,target_node,files,files_recovered,files_percent,bytes_total,bytes_percent,translog_ops_recovered,translog_ops,translog_ops_percent&s=time:desc,target_node,source_node,index' | grep -v done | head -40 | sed 's/[^ ]*es-data-//g' | column -t"
 }
 
 estop_relo () {
@@ -1359,6 +1359,26 @@ estop_active_threads () {
 		| grep -v '0[ ]\+0[ ]\+[0-9]' \
         | grep -v master- \
         | head -40"
+}
+
+estop_idx_indexing () {
+    # watches ES indexing activities for indexes
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch -d "${escmd[$env]} GET '_cat/indices?pretty&v&h=index,indexing.index*&s=indexing.index_current:desc,indexing.index_time:desc' \
+        -H 'Accept: application/json' \
+        | jq .[] \
+        | paste - - - - - - - \
+        | $sedCmd 's/indexing\.//g;s/[}{]\+[ \t]\+//g;s/[ \t]\+}//g;s/\"//g' \
+        | column -t  \
+        | head"
+}
+
+estop_node_indexing () {
+    # watches ES indexing activities for nodes
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch -d "${escmd[$env]} GET '_cat/nodes?v&h=name,index*,segments.count,segments.index_writer_memory&s=name'"
 }
 
 show_health () {
@@ -1922,6 +1942,49 @@ show_idx_mappings () {
 ##          ' \
 ##        | less -r
 #}
+
+clear_idx_cache_fielddata () {
+    # clear /_cache/clear?fielddata=true
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} POST '_cache/clear?fielddata=true&pretty'
+
+    # https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-clearcache.html
+    # https://stackoverflow.com/questions/29810531/elasticsearch-kibana-errors-data-too-large-data-for-timestamp-would-be-la/62604860#62604860
+}
+
+clear_idx_cache_query () {
+    # clear /_cache/clear?query=true
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} POST '_cache/clear?query=true&pretty'
+}
+
+clear_idx_cache_request () {
+    # clear /_cache/clear?request=true
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} POST '_cache/clear?request=true&pretty'
+}
+
+clear_idx_cache_all () {
+    # clear /_cache/clear
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} POST '_cache/clear?pretty'
+}
+
+list_index_metric_types () {
+    # list ES index metric types
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_stats?pretty&level=cluster' \
+        | grep '^      "' \
+        | sort -u \
+        | $sedCmd 's/[ ]\+//g;s/[":{]//g'
+
+    # https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html
+}
 
 
 
