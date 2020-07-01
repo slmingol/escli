@@ -2161,9 +2161,9 @@ exclude_node_name () {
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
 
-    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,name')
-    ip=$(echo "${output}"   | awk -v n="$node" '$0 ~ n {print $1}')
-    name=$(echo "${output}" | awk -v n="$node" '$0 ~ n {print $2}')
+    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,name,role')
+    ip=$(echo "${output}"   | awk -v n="$node" '$0 ~ n && $3 ~ "d" {print $1}')
+    name=$(echo "${output}" | awk -v n="$node" '$0 ~ n && $3 ~ "d" {print $2}')
 
     EXCLUDENAME=$(cat <<-EOM
         {
