@@ -1528,7 +1528,12 @@ show_idx_retention_violations () {
     olderThanDate=$(calc_date "${daysToRetain} days ago")
     newerThanDate=$(calc_date "0 days")
 
-    for idxSubType in $(echo "$indexes" | awk '{print $1}' | cut -d"-" -f2 | sort -u); do
+    idxSubTypes=$(echo "$indexes" \
+        | awk '{print $1}' \
+        | $sedCmd "s/${idxArg}-//;s/-[0-9]\{4\}\.[0-9]\{2\}.*$//" \
+        | sort -u)
+
+    for idxSubType in $idxSubTypes; do
         printf "\n\n"
         printf "Indices outside %s day(s) retention window\n" "$daysToRetain"
         printf "==========================================\n"
@@ -1539,6 +1544,8 @@ show_idx_retention_violations () {
             [[ "${idx}" > "${idxArg}-${idxSubType}-${newerThanDate}" ]] && echo "${idx}"
         done
     done
+
+    echo ''
 }
 
 show_idx_doc_sources_1st_10k () {
