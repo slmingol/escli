@@ -1499,9 +1499,13 @@ verify_idx_retentions () {
         idxDetails=$(show_idx_sizes "$env")
         now=$(date -u +%Y%m%d)
         futureIdxCnt=$(echo "$idxDetails" | grep ^$idx \
-            | cut -d" " -f1 | cut -d- -f3 | sed 's/\.//g' \
+            | cut -d" " -f1 \
+            | $sedCmd 's/-[0-9]\+$//g;s/.*-//;s/\.//g' \
             | awk -v DATE="$now" '$1 > DATE' | wc -l | awk '{print $1}')
-        echo "$idxDetails" | grep ^$idx | cut -d"-" -f2 | sort | uniq -c
+
+        echo "$idxDetails" | awk -v IDX="$idx" '$0 ~ IDX {print $1}' \
+            | $sedCmd "s/${idx}-//;s/-[0-9]\+$//g;s/-[0-9.]\+$//g" \
+            | sort | uniq -c
         echo ''
         [[ $futureIdxCnt = 0 ]] || echo "Indexes dated in future: $futureIdxCnt"
         echo ''
