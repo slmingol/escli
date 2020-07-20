@@ -1539,7 +1539,7 @@ show_idx_retention_violations () {
         printf "==========================================\n"
         printf "Index Sub-Type: [%s]\n" "${idxSubType}"
         printf "==========================================\n\n"
-        for idx in $(echo "$indexes" | grep -oE "${idxArg}-${idxSubType}-\d+.\d+.\d+"); do 
+        for idx in $(echo "$indexes" | grep -oE "${idxArg}-${idxSubType}-\d+.\d+.\d+" | sort -u); do 
             [[ "${idx}" < "${idxArg}-${idxSubType}-${olderThanDate}" ]] && echo "${idx}"
             [[ "${idx}" > "${idxArg}-${idxSubType}-${newerThanDate}" ]] && echo "${idx}"
         done
