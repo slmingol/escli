@@ -38,6 +38,8 @@ uname="$(uname)"
 [ "$uname" == 'Darwin' ] && pasteCmd=gpaste || pasteCmd=paste
 # gdate
 [ "$uname" == 'Darwin' ] && dateCmd=gdate   || dateCmd=date
+# ggrep
+[ "$uname" == 'Darwin' ] && grepCmd=ggrep   || grepCmd=grep
 
 #################################################
 ### Functions 
@@ -1562,7 +1564,7 @@ show_idx_doc_sources_1st_10k () {
     printf "Total Docs: [%s]\n" "$totalCnt"
     printf "=========================\n\n"
 
-    ${escmd[$env]} GET ${idxArg}'/_search?size=10' \
+    ${escmd[$env]} GET ${idxArg}'/_search?size=10000' \
         | jq '. | .hits.hits[] | [._index, ._source.beat.hostname, ._source."@timestamp"]' \
         | paste - - - - -  \
         | column -t
@@ -1604,7 +1606,7 @@ show_idx_doc_sources_all_k8sns_cnts () {
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
 
-    timestamp=$(echo "${idxArg}" | sed -e 's/.*-//' -e 's/\./-/g')
+    timestamp=$(echo "${idxArg}" | $grepCmd -oP "\d{4}.\d{2}.\d{2}" | sed 's/\./-/g')
 
     printf "\n\n"
     printf "k8s document sources (counts)\n"
@@ -1660,6 +1662,7 @@ show_idx_doc_sources_all_k8sns_cnts () {
 	EOM
     )
     cmdOutput=$(${escmd[$env]} GET ${idxArg}'/_search?pretty' -d "$SEARCHQUERY")
+
     echo "$cmdOutput" \
         | jq '.aggregations.k8sns.buckets[] | .key, .daily_buckets.buckets[].key_as_string, .daily_buckets.buckets[].doc_count' \
         | paste - - -  \
@@ -1705,6 +1708,7 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
 	EOM
     )
     cmdOutput=$(${escmd[$env]} GET ${idxArg}'/_search?pretty' -d "$SEARCHQUERY")
+    echo "$cmdOutput"
     echo "$cmdOutput" \
         | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[] | .' \
         | grep -v '"key"' \
@@ -2172,15 +2176,21 @@ exclude_node_name () {
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
 
-    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,name,role')
-    ip=$(echo "${output}"   | awk -v n="$node" '$0 ~ n && $3 ~ "d" {print $1}')
-    name=$(echo "${output}" | awk -v n="$node" '$0 ~ n && $3 ~ "d" {print $2}')
+    name=$(
+        ${escmd[$env]}  GET '_cluster/settings?include_defaults=true&flat_settings=true&pretty' \
+            | jq '.defaults."discovery.zen.ping.unicast.hosts" | .[]' \
+            | sed 's/"//g' \
+            | grep -v master \
+            | grep "$node"
+    )
+
+    ip=$(host "$name" | awk '{print $4}')
 
     EXCLUDENAME=$(cat <<-EOM
         {
          "transient": {
            "cluster.routing.allocation.exclude._ip":   "$ip",
-           "cluster.routing.allocation.exclude._name": "$name"
+           "cluster.routing.allocation.exclude._host": "$name"
          }
         }
 	EOM
@@ -2197,7 +2207,8 @@ clear_excluded_nodes () {
         {
          "transient": {
            "cluster.routing.allocation.exclude._ip":   null,
-           "cluster.routing.allocation.exclude._name": null
+           "cluster.routing.allocation.exclude._name": null,
+           "cluster.routing.allocation.exclude._host": null
          }
         }
 	EOM
@@ -2580,7 +2591,7 @@ calc_num_nodes_overXdays () {
     printf "\n\n\n"
 }
 
-### pct_growth_rates_overXdays () {
+### pct_growth_rates_overXdays \(\) {
 ###     # calc. the total docs & HDD storage used by all indices over X days
 ###     local env="$1"
 ###     local days="$2"
