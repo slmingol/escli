@@ -144,7 +144,9 @@ list_nodes_zenoss_alarms
 show_nodes_fs_details
 show_nodes_circuit-breaker_summary
 show_nodes_circuit-breaker_details
-show_nodes_threadpools
+show_nodes_threadpools_active_rejected
+show_nodes_threadpools_details
+show_nodes_threadpools_summary
 show_shards
 show_big_shards
 show_small_shards
@@ -254,7 +256,6 @@ calc_total_docs_hdd_overXdays
 calc_daily_docs_hdd_overXdays
 calc_idx_type_avgs_overXdays
 calc_num_nodes_overXdays
-###
 list_ilm_policies
 show_ilm_policy
 show_ilm_policies
@@ -318,7 +319,9 @@ list_nodes_zenoss_alarms                       # list ES node HDD usage alarms i
 show_nodes_fs_details                          # list ES nodes filesystem details
 show_nodes_circuit-breaker_summary             # list ES nodes circuit breaker tripped summaries
 show_nodes_circuit-breaker_details             # list ES nodes circuit breaker details
-show_nodes_threadpools                         # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
+show_nodes_threadpools_active_rejected         # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
+show_nodes_threadpools_details                 # list ES nodes thread pool details (_cat/thread_pool)
+show_nodes_threadpools_summary                 # list ES nodes thread pool (_cat/thread_pool)
 
 #5-----------------------------------------------
 # shard mgmt funcs

@@ -557,7 +557,7 @@ show_nodes_circuit-breaker_details () {
     ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' | jq . -C | less -r
 }
 
-show_nodes_threadpools () {
+show_nodes_threadpools_active_rejected () {
     # list ES nodes thread pool counts (_cat/thread_pool) ... any all zeros filtered out
     local env="$1"
     usage_chk1 "$env" || return 1
@@ -565,6 +565,21 @@ show_nodes_threadpools () {
 		| grep -v '0[ ]\+0[ ]\+0'
 }
 
+show_nodes_threadpools_details () {
+    # list ES nodes thread pool details (_cat/thread_pool)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/thread_pool?h=node_name,name,active,pool*,que*,rej*,larg*,co*,max*&s=name,node_name&v'
+    # https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-thread-pool.html
+}
+
+show_nodes_threadpools_summary () {
+    # list ES nodes thread pool (_cat/thread_pool)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/thread_pool?h=node_name,name,active,pool*,que*,rej*,larg*,comp*&s=name,node_name&v'
+    # https://www.elastic.co/guide/en/elasticsearch/reference/current/cat-thread-pool.html
+}
 
 
 #5-----------------------------------------------
