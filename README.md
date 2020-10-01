@@ -524,7 +524,7 @@ Most of the functions will take a single argument, either `l` or `p` or `c` to d
 #### Deleting docs from an index
 
 ```
-del_docs_k8s_ns_range
+$ del_docs_k8s_ns_range
 
 USAGE: del_docs_k8s_ns_range [l|p|c] <idx pattern> <k8s namespace> <start time> <end time>
 
@@ -535,6 +535,18 @@ USAGE: del_docs_k8s_ns_range [l|p|c] <idx pattern> <k8s namespace> <start time> 
       -- filebeat-*
       -- -or- filebeat-6.5.1-2019.07.04,filebeat-6.5.1-2019.07.05,....
       -- -or- filebeat-*-2019.07*
+
+
+    ------------------------------------------------------------------------------------------------------
+
+    Example
+    =======
+    $ del_docs_k8s_ns_range l filebeat-* big-dipper-perf 2019-07-11T11:57:20.968Z 2019-07-12T04:26:38.757Z
+    {"task":"vudQxvnfSQuxMtdkq8ZTUQ:844209600"}
+
+    ------------------------------------------------------------------------------------------------------
+
+        Source: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
 
 
 ```
