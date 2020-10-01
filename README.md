@@ -132,6 +132,7 @@ calc_date
 calc_hour
 calc_date_1daybefore
 calc_date_1dayafter
+calc_millis_date
 julian_day
 ceiling_divide
 escli_ls
@@ -295,6 +296,7 @@ calc_date                                      # print UTC date X "days | days a
 calc_hour                                      # print UTC date X "hours | hours ago"
 calc_date_1daybefore                           # print UTC date 1 day before given date (YYYY-mm-dd)
 calc_date_1dayafter                            # print UTC date 1 day after given date (YYYY-mm-dd)
+calc_millis_date                               # convert UTC millis date to human format
 julian_day                                     # calculate julian day based on a YYYYmmdd
 ceiling_divide                                 # ceiling divide 2 numbers
 

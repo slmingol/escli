@@ -145,6 +145,22 @@ calc_date_1dayafter () {
     ${dateCmd} -u --date="$date +1 days" +%Y.%m.%d
 }
 
+calc_millis_date () {
+    # convert UTC millis date to human format
+    local millisTime="$1"
+
+    [[ -z ${FUNCNAME[1]} ]] && caller=${FUNCNAME[0]} || caller=${FUNCNAME[1]}
+
+    [[ ! $millisTime =~ [0-9]{5,} ]] \
+        && printf "\nUSAGE: ${caller} [ '<millis time>' ]\n\n" \
+        && return 1
+
+    echo ""
+    printf "%s: %s\n" "UTC"           "$(date -u -r "$(( ($millisTime + 500) / 1000 ))")"
+    printf "%s: %s\n" "$(date +"%Z")" "$(date    -r "$(( ($millisTime + 500) / 1000 ))")"
+    echo ""
+}
+
 julian_day () {
     # calculate julian day based on a YYYYmmdd
 
