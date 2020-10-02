@@ -1414,6 +1414,13 @@ estop_node_indexing () {
     watch -d "${escmd[$env]} GET '_cat/nodes?v&h=name,index*,segments.count,segments.index_writer_memory&s=name'"
 }
 
+estop_unassigned_shards () {
+    # watches ES shards that are UNASSIGNED
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    watch -x bash -c ". ${filename}; show_shards p | grep UNASS | wc -l"
+}
+
 show_health () {
     # cluster's health stats
     local env="$1"

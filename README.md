@@ -197,6 +197,7 @@ estop_rejected_writes
 estop_active_threads
 estop_idx_indexing
 estop_node_indexing
+estop_unassigned_shards
 show_health
 show_watermarks
 show_state
@@ -397,6 +398,7 @@ estop_rejected_writes                          # watches ES write thread pools f
 estop_active_threads                           # watches ES thread pools for active/rejected activities
 estop_idx_indexing                             # watches ES indexing activities for indexes
 estop_node_indexing                            # watches ES indexing activities for nodes
+estop_unassigned_shards                        # watches ES shards that are UNASSIGNED
 show_health                                    # cluster's health stats
 show_watermarks                                # show watermarks when storage marks readonly
 show_state                                     # shows the state of the indicies' shards (RELO, Translog, etc.)
