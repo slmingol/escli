@@ -1378,7 +1378,7 @@ estop_rejected_writes () {
     # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch -d "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,active,rejected,completed'  \
+    watch -d "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,threads,queue,active,rejected,largest,completed'  \
         | grep -E 'write|completed' \
         | awk 'NR == 1; NR > 1 {print \$0 | \"sort -k4,4gr\"}' \
         | head -40"
@@ -2778,6 +2778,11 @@ bootstrap_ilm_idx () {
     printf "\n\n"
 }
 
+trigger_ilm_rollover () {
+    # trigger ILM to rollover current index via alias
+    echo
+}
+
 
 
 #19----------------------------------------------
@@ -3908,3 +3913,50 @@ show_template () {
 # "syslog-2020.06.18"                  361189510
 # "metricbeat-6.2.2-2020.06.18"        19173066
 # "metricbeat-default-2020.06.18"      875255
+
+# $ ./esp GET '_nodes/thread_pool?pretty' | jq '.nodes[] | {name: .name, writes: .thread_pool.write}' | paste - - - - - - - -
+# {	  "name": "rdu-es-data-01i",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01r",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01h",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01m",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01d",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01n",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-master-01a",	  "writes": {	    "type": "fixed",	    "size": 4,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01g",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01o",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01j",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01q",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01l",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-master-01b",	  "writes": {	    "type": "fixed",	    "size": 4,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01c",	  "writes": {	    "type": "fixed",	    "size": 48,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01f",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-ml-01a",	  "writes": {	    "type": "fixed",	    "size": 4,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01p",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-ml-01b",	  "writes": {	    "type": "fixed",	    "size": 4,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01e",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01a",	  "writes": {	    "type": "fixed",	    "size": 48,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01k",	  "writes": {	    "type": "fixed",	    "size": 40,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-data-01b",	  "writes": {	    "type": "fixed",	    "size": 48,	    "queue_size": 200	  }	}
+# {	  "name": "rdu-es-master-01c",	  "writes": {	    "type": "fixed",	    "size": 4,	    "queue_size": 200	  }	}
+
+# $ show_shards p | grep -f <(show_shards p | grep $(calc_date '0 days ago') | sort -k1,1 | awk '{print $1}' | sort -u) | awk '{print $1, $8}' | gsed 's/-[0-9]\+ / /' | sort -k2,2 | awk '{print $2}' | uniq -c
+#    6 rdu-es-data-01a
+#    7 rdu-es-data-01b
+#    6 rdu-es-data-01c
+#    3 rdu-es-data-01d
+#    6 rdu-es-data-01e
+#    4 rdu-es-data-01f
+#    5 rdu-es-data-01g
+#    7 rdu-es-data-01h
+#    3 rdu-es-data-01i
+#    6 rdu-es-data-01j
+#    4 rdu-es-data-01k
+#    6 rdu-es-data-01l
+#    5 rdu-es-data-01m
+#    6 rdu-es-data-01n
+#    5 rdu-es-data-01o
+#    6 rdu-es-data-01p
+#    6 rdu-es-data-01q
+#    5 rdu-es-data-01r
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-threadpool.html
