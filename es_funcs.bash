@@ -1378,10 +1378,10 @@ estop_rejected_writes () {
     # watches ES write thread pools for rejected writes (EsRejectedExecutionException)
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch -d "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,threads,queue,active,rejected,largest,completed'  \
-        | grep -E 'write|completed' \
-        | awk 'NR == 1; NR > 1 {print \$0 | \"sort -k4,4gr\"}' \
-        | head -40"
+    watch -d "${escmd["$env"]} GET '_cat/thread_pool?v&h=node_name,name,threads,queue,active,rejected,largest,completed&s=node_name'  \
+        | grep -E 'write|completed' #\
+        #| awk 'NR == 1; NR > 1 {print \$0 | \"sort -k4,4gr\"}' \
+        #| head -40"
 }
 
 estop_active_threads () {
