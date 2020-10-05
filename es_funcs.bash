@@ -438,6 +438,19 @@ usage_chk16 () {
         && return 1
 }
 
+usage_chk17 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a index name)
+    local env="$1"
+    local idxArg="$2"
+
+    [[ $env =~ [lpc] && $idxArg != '' ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <idx name>\n\n" \
+        && printf "  * index: [filebeat-60d-6.5.1-2020.10.04-000089|filebeat-60d-6.5.1-2020.10.04-000140|...]\n\n" \
+        && return 1
+}
+
+
+
 #3-----------------------------------------------
 # help funcs
 ##-----------------------------------------------
@@ -1918,6 +1931,34 @@ show_idx_stats () {
     ${escmd[$env]} GET '_cat/indices?pretty&v&s=pri.store.size:desc'
 }
 
+show_idx_types () {
+    # show idx types [beat type] - [retention period] - [beat version]
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    show_idx_sizes p \
+        | grep -vE '^index|^\.|^ilm' \
+        | sort -k1,1 \
+        | awk '{print $1}' \
+        | $sedCmd -e 's/-[0-9]\+$//' -e 's/-[0-9]\{4\}.*$//' \
+        | sort -u
+}
+
+show_idx_last10 () {
+    # show last 10 indexes (by date) for a given idx pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    printf "\n\n"
+    for idxType in $(show_idx_types "$env" | grep "$idxArg"); do
+        echo ""
+        echo "last 10 idxs for idx type: [${idxType}]"
+        echo "===================================================="
+        show_idx_sizes "$env" | grep $idxType | sort -k1,1 | tail -10
+    done
+    printf "\n\n"
+}
+
 delete_idx () {
     # delete an index
     local env="$1"
@@ -2695,6 +2736,32 @@ show_alias_details_excludeEmpty () {
     list_alias_details "$env" \
         | jq 'to_entries[] | if .value.aliases != {} then (.) else empty end'
 
+}
+
+show_alias_for_idxs () {
+    # shows alias name & which index is writable for a given idx pattern
+    local env="$1"
+    local idxArg="$2"
+    usage_chk3 "$env" "$idxArg" || return 1
+
+    output=$( ${escmd["$env"]} GET "${idxArg}*/_alias/*?pretty" \
+        | jq '. | keys[] as $k | "\($k), \(.[$k] | .aliases)"' \
+        | $sedCmd -e 's/["\{}]\+//g' -e 's/:is_write_index:/, /' -e 's/,//g' \
+        | sort -k1,1
+    )
+
+    printf "\n\n"
+    printf "======================================================\n"
+    printf "**NOTE:** The output below shows the instances of each\n"
+    printf "          index type that matches your pattern\n"
+    printf "======================================================\n"
+    printf "\n\n"
+    (
+        printf "%s %s %s\n" "Index" "Alias" "Writable"
+        printf "%s %s %s\n" "=============" "=============" "============="
+        printf "%s\n" "$output"
+    ) | column -t
+    printf "\n\n"
 }
 
 list_writable_ilm_idxs_on_alias () {
