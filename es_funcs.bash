@@ -2920,10 +2920,21 @@ show_template () {
     local env="$1"
     local idxArg="$2"
     if ! usage_chk3 "$env" "$idxArg"; then
-        printf "\nExamples\n========\nshow_template l filebeat-6.5.1 | grep settings -A15\n\n\n"
+        printf "\nExamples\n========\nshow_template l filebeat-60d-6.5.1 | grep settings -A15\n\n\n"
         return 1
     fi
     ${escmd["$env"]} GET "_template/${idxArg}*?pretty"
+}
+
+show_template_idx_patterns () {
+    # show index_patterns for templates that match provided pattern 
+    local env="$1"
+    local idxArg="$2"
+    if ! usage_chk3 "$env" "$idxArg"; then
+        printf "\nExamples\n========\nshow_template_idx_patterns p metricbeat*7.8.0*\n\n\n"
+        return 1
+    fi
+    ${escmd["$env"]} GET "_template/${idxArg}?pretty&filter_path=**.index_patterns"
 }
 
 
