@@ -2847,7 +2847,50 @@ bootstrap_ilm_idx () {
 
 trigger_ilm_rollover () {
     # trigger ILM to rollover current index via alias
-    echo
+    local env="$1"
+    local idxArg="$2"
+    MSG1=$(usage_chk3 "$env" "$idxArg" || return 1)
+
+    MSG2=$(cat <<-EOM
+
+
+    To trigger ILM to rollover into a new index you'll first need to identify an alias. You can
+    inspect an index like so to find its assoc. alias:
+
+        $ show_alias_for_index p metricbeat-45d-7.8.0-2020.10.05-000077
+
+
+        Alias                                    Writable
+        =============                            ===========
+        metricbeat-45d-7.8.0                     true
+
+
+    To trigger a rollover of this alias:
+
+        $ trigger_ilm_rollover p metricbeat-45d-7.8.0
+
+
+    Sources:
+        - https://www.elastic.co/guide/en/elasticsearch/reference/master/indices-rollover-index.html
+        - https://bandwidth-jira.atlassian.net/wiki/spaces/PLAT/pages/541983045/Rollover+an+ILM+index
+
+
+	EOM
+    )
+
+    if [ -n "$MSG1" ]; then
+        printf "%s\n%s\n\n\n" "$MSG1" "$MSG2"
+        return 1
+    fi
+
+    MAXDOC=$(cat <<-EOM
+        {
+            "conditions": { "max_docs": 1000 }
+        }
+	EOM
+    )
+
+    ${escmd[$env]} POST "${idxArg}/_rollover?pretty" -d "$MAXDOC"
 }
 
 

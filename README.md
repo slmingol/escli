@@ -223,6 +223,8 @@ disable_shard_allocations
 clear_shard_allocations
 show_idx_sizes
 show_idx_stats
+show_idx_types
+show_idx_last10
 delete_idx
 showcfg_idx_cfgs
 showcfg_idx_stats
@@ -264,11 +266,13 @@ show_ilm_policies
 list_aliases
 show_alias_details
 show_alias_details_excludeEmpty
+show_alias_for_idxs
 list_writable_ilm_idxs_on_alias
 show_writable_ilm_idxs_on_alias_details
 explain_indexes_ilm
 show_ilm_components_for_idx
 bootstrap_ilm_idx
+trigger_ilm_rollover
 list_templates
 show_template
 calc_idx_type_avgs_Xdays
@@ -432,6 +436,8 @@ clear_shard_allocations                        # clear the allocator to route sh
 ##-----------------------------------------------
 show_idx_sizes                                 # show index sizes sorted (big -> small)
 show_idx_stats                                 # show index stats sorted (big -> small)
+show_idx_types                                 # show idx types [beat type] - [retention period] - [beat version]
+show_idx_last10                                # show last 10 indexes (by date) for a given idx pattern
 delete_idx                                     # delete an index
 showcfg_idx_cfgs                               # show all '<index name>/_settings' configs
 showcfg_idx_stats                              # show all '<index name>/_stats'
@@ -496,11 +502,13 @@ show_ilm_policies                              # show all _ilm/policy details
 list_aliases                                   # show all _alias names
 show_alias_details                             # show all _alias details
 show_alias_details_excludeEmpty                # show all _alias that are not '"aliases": {}'
+show_alias_for_idxs                            # shows alias name & which index is writable for a given idx pattern
 list_writable_ilm_idxs_on_alias                # show names of idxs where 'is_write_index: true' on aliases
 show_writable_ilm_idxs_on_alias_details        # show verbose which idxs are 'is_write_index: true' on aliases
 explain_indexes_ilm                            # explain ilm for given indexes '<index pattern>/_ilm/explain'
 show_ilm_components_for_idx                    # show ilm for given index '<index pattern>/_ilm/explain'
 bootstrap_ilm_idx                              # creates an index and designates it as the write index for an alias
+trigger_ilm_rollover                           # trigger ILM to rollover current index via alias
 
 #19----------------------------------------------
 # template funcs
