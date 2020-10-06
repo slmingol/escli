@@ -1941,6 +1941,17 @@ show_idx_stats () {
     ${escmd[$env]} GET '_cat/indices?pretty&v&s=pri.store.size:desc'
 }
 
+show_idx_create_timestamps_latest20 () {
+    # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/indices?h=index,pri,rep,docs.count,docs.deleted,store.size,creation.date.string&v&s=creation.date.string' \
+        | ( \
+            read -r; printf "%s\n" "$(echo $REPLY | sed 's/ /,/g')"; tail -20 \
+            | awk '{printf("%s,%s,%s,%s,%s,%s,", $1, $2, $3, $4, $5, $6); system("gdate -d " $7)}' \
+          ) | column -t -s, 
+}
+
 show_idx_types () {
     # show idx types [beat type] - [retention period] - [beat version]
     local env="$1"
