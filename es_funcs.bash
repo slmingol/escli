@@ -2867,7 +2867,7 @@ trigger_ilm_rollover () {
     To trigger ILM to rollover into a new index you'll first need to identify an alias. You can
     inspect an index like so to find its assoc. alias:
 
-        $ show_alias_for_index p metricbeat-45d-7.8.0-2020.10.05-000077
+        $ show_alias_for_idxs p metricbeat-45d-7.8.0-2020.10.05-000077
 
 
         Alias                                    Writable
