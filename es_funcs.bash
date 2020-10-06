@@ -2938,7 +2938,7 @@ show_template_idx_patterns () {
 }
 
 show_template_ilm_idx_alias_details () {
-    # show index_patterns, ilm-policy, & rollover alias  for templates that match provided pattern 
+    # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
     local env="$1"
     local idxArg="$2"
     if ! usage_chk3 "$env" "$idxArg"; then
@@ -2954,6 +2954,7 @@ show_template_ilm_idx_alias_details () {
     ${escmd["$env"]} GET "_template/${idxArg}?pretty&filter_path=**.index_patterns,**.lifecycle" \
         | jq --raw-output --compact-output 'keys[] as $k | "\($k), \(.[$k])"' \
         | $sedCmd -e 's/"settings":{"index":{"lifecycle":{"name"/"ilm-policy"/g' -e 's/[}{]\+//g' \
+            -e 's/"index_patterns"://g' -e 's/"ilm-policy"://g' -e 's/"rollover_alias"://g' \
         | awk -F, '{print $1, $2, $3, $4}'
     ) | column -t
 
