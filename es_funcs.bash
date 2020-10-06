@@ -2937,6 +2937,29 @@ show_template_idx_patterns () {
     ${escmd["$env"]} GET "_template/${idxArg}?pretty&filter_path=**.index_patterns"
 }
 
+show_template_ilm_idx_alias_details () {
+    # show index_patterns, ilm-policy, & rollover alias  for templates that match provided pattern 
+    local env="$1"
+    local idxArg="$2"
+    if ! usage_chk3 "$env" "$idxArg"; then
+        printf "\nExamples\n========\nshow_template_ilm_idx_alias_details p metricbeat*7.8.0*\n\n\n"
+        return 1
+    fi
+
+    printf "\n\n"
+
+    (
+      printf "%s\n%s\n" "template        index_patterns   ilm-policy      rollover_alias" \
+                        "=============== ================ =============== ==============="
+    ${escmd["$env"]} GET "_template/${idxArg}?pretty&filter_path=**.index_patterns,**.lifecycle" \
+        | jq --raw-output --compact-output 'keys[] as $k | "\($k), \(.[$k])"' \
+        | $sedCmd -e 's/"settings":{"index":{"lifecycle":{"name"/"ilm-policy"/g' -e 's/[}{]\+//g' \
+        | awk -F, '{print $1, $2, $3, $4}'
+    ) | column -t
+
+    printf "\n\n"
+}
+
 
 
 ###############################################################################
