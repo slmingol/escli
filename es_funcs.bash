@@ -449,6 +449,16 @@ usage_chk17 () {
         && return 1
 }
 
+usage_chk18 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a alias)
+    local env="$1"
+    local aliasArg="$2"
+
+    [[ $env =~ [lpc] && $aliasArg != '' ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <alias>\n\n" \
+        && return 1
+}
+
 
 
 #3-----------------------------------------------
@@ -2849,7 +2859,7 @@ trigger_ilm_rollover () {
     # trigger ILM to rollover current index via alias
     local env="$1"
     local idxArg="$2"
-    MSG1=$(usage_chk3 "$env" "$idxArg" || return 1)
+    MSG1=$(usage_chk18 "$env" "$idxArg" || return 1)
 
     MSG2=$(cat <<-EOM
 
