@@ -1941,15 +1941,33 @@ show_idx_stats () {
     ${escmd[$env]} GET '_cat/indices?pretty&v&s=pri.store.size:desc'
 }
 
-show_idx_create_timestamps_latest20 () {
+show_idx_create_timestamps_utc () {
+    # show index creation timestamps sorted (oldest -> newest) for indexes created
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cat/indices?h=index,pri,rep,docs.count,docs.deleted,store.size,creation.date.string&v&s=creation.date.string' \
+        | ( \
+            read -r REP; printf "%s\n" "$(echo $REP | sed 's/ /,/g')"; \
+                awk '{printf("%s,%s,%s,%s,%s,%s,%s\n", $1, $2, $3, $4, $5, $6, $7)}' \
+          ) | column -t -s, 
+}
+
+show_idx_create_timestamps_localtz_latest20 () {
     # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_cat/indices?h=index,pri,rep,docs.count,docs.deleted,store.size,creation.date.string&v&s=creation.date.string' \
         | ( \
-            read -r; printf "%s\n" "$(echo $REPLY | sed 's/ /,/g')"; tail -20 \
-            | awk '{printf("%s,%s,%s,%s,%s,%s,", $1, $2, $3, $4, $5, $6); system("gdate -d " $7)}' \
-          ) | column -t -s, 
+            read -r REP; printf "%s\n" "$(echo $REP | sed 's/ /,/g')"; tail -20 \
+            | awk -v dateCmd="$dateCmd -d" \
+                '{
+                    cmd = dateCmd $7;
+                    cmd | getline out; 
+                    $7=""; 
+                    print $1","$2","$3","$4","$5","$6","out; 
+                    close(cmd);
+                }' \
+          ) | column -s, -t
 }
 
 show_idx_types () {

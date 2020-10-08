@@ -223,7 +223,8 @@ disable_shard_allocations
 clear_shard_allocations
 show_idx_sizes
 show_idx_stats
-show_idx_create_timestamps_latest20
+show_idx_create_timestamps_utc
+show_idx_create_timestamps_localtz_latest20
 show_idx_types
 show_idx_last10
 delete_idx
@@ -276,6 +277,8 @@ bootstrap_ilm_idx
 trigger_ilm_rollover
 list_templates
 show_template
+show_template_idx_patterns
+show_template_ilm_idx_alias_details
 show_template_idx_patterns
 show_template_ilm_idx_alias_details
 show_template_idx_patterns
@@ -444,7 +447,8 @@ clear_shard_allocations                        # clear the allocator to route sh
 ##-----------------------------------------------
 show_idx_sizes                                 # show index sizes sorted (big -> small)
 show_idx_stats                                 # show index stats sorted (big -> small)
-show_idx_create_timestamps_latest20            # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
+show_idx_create_timestamps_utc                 # show index creation timestamps sorted (oldest -> newest) for indexes created
+show_idx_create_timestamps_localtz_latest20                                               # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
 show_idx_types                                 # show idx types [beat type] - [retention period] - [beat version]
 show_idx_last10                                # show last 10 indexes (by date) for a given idx pattern
 delete_idx                                     # delete an index
@@ -526,6 +530,8 @@ list_templates                                 # show all template details
 show_template                                  # show template X's details
 show_template_idx_patterns                     # show index_patterns for templates that match provided pattern 
 show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
+
+
 
 
 
