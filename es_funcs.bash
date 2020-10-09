@@ -840,7 +840,7 @@ show_hot_idxs_shard_distribution_by_node () {
     printf "\n\n%s\n" "$colHeader"
 
     for node in $nodes; do
-        echo "$shardDetails" | grep "$node"
+        echo "$shardDetails" | grep -w "$node"
         echo "$shardDetails" | awk -v node="${node}" '$1 == node {total += $3} END {printf("* * %0.0f\n"), total}'
     done \
         | column -t \
