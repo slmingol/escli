@@ -1952,7 +1952,7 @@ show_idx_create_timestamps_utc () {
           ) | column -t -s, 
 }
 
-show_idx_create_timestamps_localtz_latest20 () {
+show_idx_create_timestamps_localtz_last20 () {
     # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
     local env="$1"
     usage_chk1 "$env" || return 1
