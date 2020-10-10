@@ -809,31 +809,35 @@ show_hot_idxs_shard_distribution_by_node () {
     local env="$1"
     usage_chk1 "$env" || return 1
 
-    todayDate=$(calc_date '0 days')
-    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+    shardDetailsFull=$(show_shards "$env" | grep -vE '^\.|default|ilm|index')
+    uniqueIdxTypes=$(echo "$shardDetailsFull" | awk '{print $1}' | rev | cut -d"-" -f2- | cut -d"-" -f2- | rev | sort -u)
+
+    mostRecentIdxs=$(
+        echo "$uniqueIdxTypes" | while read line; do
+            echo "$shardDetailsFull" | awk '{print $1}' | grep "$line" | sort | tail -1
+        done
+    )
 
     shardDetails=$(
         (
             printf "node indexType #shards\n"
             printf -- "---- --------- -------\n"
-            show_shards "$env" | \
-                grep "$todayDay" \
-                | grep -vE '^\.|f5|heart|default' \
+            echo "$shardDetailsFull" \
                 | awk '{print $8, $1}' \
-                | sed "s/-${todayDate}//g" \
                 | sort -k1,2 \
+                | grep -f <(echo "$mostRecentIdxs") \
                 | uniq -c \
                 | awk '{print $2, $3, $1}'
         ) | column -t
     )
 
     nodes="$(echo "$shardDetails" | grep -vE '^$|node|--' | awk '{print $1}' | sort -u)"
-
     colWidth="$(echo "$shardDetails" | grep '^node' | wc -c | awk '{print $1}')"
     # adjust to remove NEWLINE
     (( colWidth-- ))
     dividingLine="$(printf -- '-%.0s' $(seq $colWidth))"
 
+    todayDate=$(calc_date '0 days')
     printf "\n\n[DATE: %s]\n\n" "$todayDate"
 
     colHeader="$(echo "$shardDetails" | grep -E '^node|^--')"
