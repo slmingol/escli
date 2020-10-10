@@ -279,18 +279,6 @@ list_templates
 show_template
 show_template_idx_patterns
 show_template_ilm_idx_alias_details
-show_template_idx_patterns
-show_template_ilm_idx_alias_details
-show_template_idx_patterns
-show_template_ilm_idx_alias_details
-show_template_idx_patterns
-show_template_ilm_idx_alias_details
-show_template_idx_patterns
-show_template_ilm_idx_alias_details
-show_template_idx_patterns
-calc_idx_type_avgs_Xdays
-calc_idx_type_avgs_Xdays
-calc_idx_type_avgs_Xdays
 ```
 
 You can also get that list with a short description of each function:
@@ -532,15 +520,6 @@ list_templates                                 # show all template details
 show_template                                  # show template X's details
 show_template_idx_patterns                     # show index_patterns for templates that match provided pattern 
 show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
-
-
-
-
-
-
-
-
-
 
 
 ```

@@ -53,10 +53,10 @@ gen_README () {
     cat \
          <($sedCmd -n '0,/^$ escli_ls$/p' README.md) \
          <(escli_ls) \
-         <($sedCmd -n '/^show_template$/,/^You can also get that list/p' README.md | grep -v '^show_template$') \
+         <($sedCmd -n '/^show_template_ilm_idx_alias_details$/,/^You can also get that list/p' README.md | grep -v '^show_template_ilm_idx_alias_details$') \
          <(grep -B1 '^$ escli_lsl$' README.md) \
          <(escli_lsl) \
-         <($sedCmd -n '/^show_template[  ]\+#/,$p' README.md | $sedCmd -n '4,$p')
+         <($sedCmd -n '/^show_template_ilm_idx_alias_details[  ]\+#/,$p' README.md | $sedCmd -n '4,$p')
 }
 
 cmp_README () {
@@ -540,11 +540,10 @@ show_nodes_circuit-breaker_summary () {
     usage_chk1 "$env" || return 1
     printf "\nnode circuit breakers tripped counts"
     printf "\n---------------------------------------------------\n"
-    ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human' \
-        | jq -s 'map({ (.nodes[].name): .nodes[].breakers }) | add'  \
-        | grep -E "lab-|: {|tripped" \
-        | paste - - - - - - - - - - - \
-        | $sedCmd -e 's/{[ \t]\+/ /g' -e 's/"tripped"://g' -e 's/"//g' \
+    ${escmd[$env]} GET '_nodes/stats/breaker?pretty&human&filter_path=**.tripped,**.name' \
+        | jq '.[][][]' \
+        | paste - - - - - - - - - - - - - - - - - - \
+        | $sedCmd -e 's/{[ \t]\+/ /g' -e 's/"tripped"://g' -e 's/["},]//g' \
         | column -t \
         | sort
     printf "\n--------- end of check ----------------------------\n\n"
