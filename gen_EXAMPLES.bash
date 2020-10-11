@@ -175,6 +175,8 @@ strings=(
     "show_field_capabilities p filebeat-60d*"
     show_fields_multiple_defs_summary
     "show_fields_multiple_defs_summary p filebeat-60d*"
+    show_fields_multiple_defs_details
+    "show_fields_multiple_defs_details p filebeat-60d-7*"
     show_field_X_multiple_defs_details
     "show_field_X_multiple_defs_details p filebeat-60d* logstash.slowlog.plugin_params"
     show_field_names
