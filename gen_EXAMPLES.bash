@@ -18,6 +18,8 @@ strings=(
     "calc_hour '10 hours'"
     calc_date_1daybefore
     "calc_date_1daybefore '2000-10-31'"
+    calc_date_1dayafter
+    "calc_date_1dayafter '2000-10-31'"
     list_nodes
     "list_nodes l"
     list_nodes_storage
