@@ -58,10 +58,28 @@ strings=(
     cancel_relo_shard
     cancel_relo_shards_all
     retry_unassigned_shards
-    "show_balance_throttle l"
-    increase_balance_throttle
-    increase_balance_throttle_XXXmb
+    show_shard_distribution_by_node_last3days
+    "show_shard_distribution_by_node_last3days p"
+    show_hot_idxs_shard_distribution_by_node
+    "show_hot_idxs_shard_distribution_by_node p"
+    show_shards_biggerthan50gb
+    "show_shards_biggerthan50gb p"
+    show_idx_with_oversized_shards_summary
+    "show_idx_with_oversized_shards_summary p"
+    show_idx_with_oversized_shards_details
+    "show_idx_with_oversized_shards_details p"
+    show_rebalance_throttle
+    "show_rebalance_throttle p"
+    show_node_concurrent_recoveries
+    "show_node_concurrent_recoveries p"
+    show_cluster_concurrent_rebalance
+    "show_cluster_concurrent_rebalance p"
+    increase_rebalance_throttle_XXXmb
+    increase_node_concurrent_recoveries
+    increase_cluster_concurrent_rebalance
     reset_balance_throttle
+    reset_node_concurrent_recoveries
+    reset_cluster_concurrent_rebalance
     change_allocation_threshold
     show_recovery
     "show_recovery l"
