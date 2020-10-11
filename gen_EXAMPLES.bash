@@ -40,12 +40,18 @@ strings=(
     "show_nodes_circuit-breaker_details l"
     show_nodes_threadpools_active_rejected
     "show_nodes_threadpools_active_rejected p"
+    show_nodes_threadpools_details
+    "show_nodes_threadpools_details p"
+    show_nodes_threadpools_summary
+    "show_nodes_threadpools_summary p"
     show_shards
     "show_shards l"
     show_big_shards
     "show_big_shards l 1a"
     show_small_shards
     "show_small_shards l 1a"
+    show_hot_shards
+    "show_hot_shards p 1a"
     show_shard_usage_by_node
     "show_shard_usage_by_node l"
     relo_shard
