@@ -647,15 +647,32 @@ show_small_shards () {
 }
 
 show_hot_shards () {
-    # list today's shards for a given node's suffix (1a, 1b, etc.)
+    # list today's "hot" shards for a given node's suffix (1a, 1b, etc.)
     local env="$1"
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
 
-    todayDate=$(calc_date '0 days')
-    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+    showShards=$(show_shards "$env")
+    showShardsHeader=$(echo "$showShards" | grep '^index')
+    shardDetailsFull=$(echo "$showShards" | grep -vE 'index')
+    uniqueIdxTypes=$(echo "$shardDetailsFull" | awk '{print $1}' | rev | cut -d"-" -f2- | cut -d"-" -f2- | rev | sort -u)
 
-    show_shards "$env" | grep -E "^index|${todayDay}" | grep -E "^index|${node}"
+    mostRecentIdxs=$(
+        echo "$uniqueIdxTypes" | while read line; do
+            echo "$shardDetailsFull" | awk '{print $1}' | grep "$line" | sort | tail -1
+        done
+    )
+
+    shardDetails=$(
+        (
+            echo "$showShardsHeader"
+            echo "$shardDetailsFull" \
+                | grep -f <(echo "$mostRecentIdxs") \
+                | grep -E "${node}$"
+        ) | column -t
+    )
+
+    echo "$shardDetails"
 }
 
 show_shard_usage_by_node () {
