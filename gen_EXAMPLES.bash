@@ -216,6 +216,8 @@ strings=(
     "list_aliases p"
     show_alias_details
     "show_alias_details p"
+    show_alias_details_excludeEmpty
+    "show_alias_details_excludeEmpty p"
     show_alias_for_idxs
     "show_alias_for_idxs p filebeat-60d"
     list_writable_ilm_idxs_on_alias
