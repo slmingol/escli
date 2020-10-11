@@ -62,8 +62,8 @@ strings=(
     "show_shard_distribution_by_node_last3days p"
     show_hot_idxs_shard_distribution_by_node
     "show_hot_idxs_shard_distribution_by_node p"
-    show_shards_biggerthan50gb
-    "show_shards_biggerthan50gb p"
+    show_shards_biggerthan55gb
+    "show_shards_biggerthan55gb p"
     show_idx_with_oversized_shards_summary
     "show_idx_with_oversized_shards_summary p"
     show_idx_with_oversized_shards_details
