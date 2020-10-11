@@ -97,7 +97,7 @@ strings=(
     "show_readonly_idxs_full l"
     clear_readonlyallowdel_idxs
     set_idx_default_field
-    set_tmplate_default_field
+    set_template_default_field
     set_idx_shards_per_node
     set_idx_max_docvalue_fields_search
     set_idx_num_replicas_to_X

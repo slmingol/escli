@@ -1300,7 +1300,7 @@ set_idx_default_field () {
     ${escmd[$env]} PUT "${idxArg}/_settings" -d "$DEFFIELD"
 }
 
-set_tmplate_default_field () {
+set_template_default_field () {
     # set template index.query.default_field => [ "*" ]
     local env="$1"
     local idxArg="$2"
