@@ -38,6 +38,8 @@ strings=(
     "show_nodes_circuit-breaker_summary l"
     show_nodes_circuit-breaker_details
     "show_nodes_circuit-breaker_details l"
+    show_nodes_threadpools_active_rejected
+    "show_nodes_threadpools_active_rejected p"
     show_shards
     "show_shards l"
     show_big_shards
