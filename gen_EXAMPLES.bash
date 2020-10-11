@@ -27,6 +27,7 @@ strings=(
     ceiling_divide
     "ceiling_divide 99 2"
     help_cat
+    help_indices
     list_nodes
     "list_nodes l"
     list_nodes_storage
