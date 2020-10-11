@@ -16,6 +16,8 @@ strings=(
     calc_hour
     "calc_hour '10 hours ago'"
     "calc_hour '10 hours'"
+    calc_date_1daybefore
+    "calc_date_1daybefore '2000-10-31'"
     list_nodes
     "list_nodes l"
     list_nodes_storage
