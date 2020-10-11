@@ -870,21 +870,19 @@ show_hot_idxs_shard_distribution_by_node () {
     printf "\n\n"
 }
 
-
-
-calc_hot_idxs_shard_sweet_spot () {
-    # calculate optimal number of hot index shards per node
-    local env="$1"
-    usage_chk1 "$env" || return 1
-
-    todayDate=$(calc_date '0 days')
-    todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
-
-    numDailyHotShards=$(show_shards "$env" |grep "$todayDay" | grep -vE '^\.|f5|heart|syslog' | wc -l)
-    numNodes=$(list_nodes_storage "$env" | grep es-data | wc -l)
-    printf "\n\n"
-    printf "Optimal hot indexes' shards per node: %s\n\n\n" "$(ceiling_divide "$numDailyHotShards" "$numNodes")"
-}
+###DEP #calc_hot_idxs_shard_sweet_spot \(\) {
+###DEP     # calculate optimal number of hot index shards per node
+###DEP     local env="$1"
+###DEP     usage_chk1 "$env" || return 1
+###DEP 
+###DEP     todayDate=$(calc_date '0 days')
+###DEP     todayDay=$(echo "$todayDate" | cut -d'.' -f2-3)
+###DEP 
+###DEP     numDailyHotShards=$(show_shards "$env" |grep "$todayDay" | grep -vE '^\.|f5|heart|syslog' | wc -l)
+###DEP     numNodes=$(list_nodes_storage "$env" | grep es-data | wc -l)
+###DEP     printf "\n\n"
+###DEP     printf "Optimal hot indexes' shards per node: %s\n\n\n" "$(ceiling_divide "$numDailyHotShards" "$numNodes")"
+###DEP }
 
 show_shards_biggerthan55gb () {
     # show shards which are > 55GB (too big)

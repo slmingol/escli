@@ -159,7 +159,6 @@ cancel_relo_shards_all
 retry_unassigned_shards
 show_shard_distribution_by_node_last3days
 show_hot_idxs_shard_distribution_by_node
-calc_hot_idxs_shard_sweet_spot
 show_shards_biggerthan55gb
 show_idx_with_oversized_shards_summary
 show_idx_with_oversized_shards_details
@@ -348,7 +347,6 @@ retry_unassigned_shards                        # reallocate all unassignable sha
 ##-----------------------------------------------
 show_shard_distribution_by_node_last3days      # show distribution of day X's shards across nodes
 show_hot_idxs_shard_distribution_by_node       # show distribution of today's hot index shards across nodes
-calc_hot_idxs_shard_sweet_spot                 # calculate optimal number of hot index shards per node
 show_shards_biggerthan55gb                     # show shards which are > 55GB (too big)
 show_idx_with_oversized_shards_summary         # show summary of indexes w/ shards > 55GB (too big)
 show_idx_with_oversized_shards_details         # show detailed view of indexes w/ shards > 55GB (too big)
