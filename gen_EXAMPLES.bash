@@ -24,6 +24,8 @@ strings=(
     "calc_millis_date 1599861452868" 
     julian_day
     "julian_day 20201010"
+    ceiling_divide
+    "ceiling_divide 99 2"
     list_nodes
     "list_nodes l"
     list_nodes_storage
