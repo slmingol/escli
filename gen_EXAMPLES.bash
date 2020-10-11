@@ -130,6 +130,7 @@ strings=(
     show_idx_doc_sources_all_k8sns_cnts
     "show_idx_doc_sources_all_k8sns_cnts l filebeat*$(calc_date '1 days ago')"
     show_idx_doc_sources_all_k8sns_cnts_hourly
+    "show_idx_doc_sources_all_k8sns_cnts_hourly p filebeat-60d*"
     showcfg_num_shards_per_idx
     "showcfg_num_shards_per_idx l"
     showcfg_shard_allocations
