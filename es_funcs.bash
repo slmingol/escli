@@ -886,8 +886,8 @@ calc_hot_idxs_shard_sweet_spot () {
     printf "Optimal hot indexes' shards per node: %s\n\n\n" "$(ceiling_divide "$numDailyHotShards" "$numNodes")"
 }
 
-show_shards_biggerthan50gb () {
-    # show shards which are > 50GB (too big)
+show_shards_biggerthan55gb () {
+    # show shards which are > 55GB (too big)
     local env="$1"
     usage_chk1 "$env" || return 1
 
@@ -895,7 +895,7 @@ show_shards_biggerthan50gb () {
 
     cat <<-EOM
 
-	Shards > 50GB
+	Shards > 55GB
 	$(printf "%s\n\n\n" "$(printf '=%.0s' {1..100})")
 
 	EOM
@@ -903,25 +903,25 @@ show_shards_biggerthan50gb () {
     {
         echo "$shards" | head -1
         echo "$shards" | grep 'gb ' | sed 's/gb / /' \
-            | awk '$6 > 50 && sub("$", "gb", $6) || NR==1' \
+            | awk '$6 > 55 && sub("$", "gb", $6) || NR==1' \
             | sort -k6,6gr
     } | column -t
     printf "%s\n\n\n" "$(printf '=%.0s' {1..100})"
 }
 
 show_idx_with_oversized_shards_summary () {
-    # show summary of indexes w/ shards > 50GB (too big)
+    # show summary of indexes w/ shards > 55GB (too big)
     local env="$1"
     usage_chk1 "$env" || return 1
 
     printf "\n\n"
-    printf "Daily Indicies w/ > 50GB shards"
+    printf "Daily Indicies w/ > 55GB shards"
     printf "\n\n"
 
     {
      printf "days IdxType\n"
      printf -- "---- -------\n"
-    show_shards_biggerthan50gb "$env"  \
+    show_shards_biggerthan55gb "$env"  \
         | grep -vE  '===|^$|index|Shards' \
         | awk '{print $1}' \
         | sort -u \
@@ -933,18 +933,18 @@ show_idx_with_oversized_shards_summary () {
 }
 
 show_idx_with_oversized_shards_details () {
-    # show detailed view of indexes w/ shards > 50GB (too big)
+    # show detailed view of indexes w/ shards > 55GB (too big)
     local env="$1"
     usage_chk1 "$env" || return 1
 
     printf "\n\n"
-    printf "Daily Indicies w/ shards (primaries) > 50GB"
+    printf "Daily Indicies w/ shards (primaries) > 55GB"
     printf "\n\n"
 
     {
      printf "Idx Shard# ShardType ShardSize\n"
      printf -- "--- ------- -------- ---------\n"
-     show_shards_biggerthan50gb "$env" \
+     show_shards_biggerthan55gb "$env" \
          | grep -vE 'Shards|===|index' \
          | awk '$3 ~ /p/ {print $1, $2, $3, $6}' \
          | sort -k1,1; 
