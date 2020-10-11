@@ -81,6 +81,8 @@ strings=(
     reset_node_concurrent_recoveries
     reset_cluster_concurrent_rebalance
     change_allocation_threshold
+    increase_node_recovery_allocations
+    reset_node_recovery_allocations
     show_recovery
     "show_recovery l"
     show_recovery_full
@@ -96,6 +98,8 @@ strings=(
     clear_readonlyallowdel_idxs
     set_idx_default_field
     set_tmplate_default_field
+    set_idx_shards_per_node
+    set_idx_max_docvalue_fields_search
     set_idx_num_replicas_to_X
     show_health
     "show_health l"
@@ -125,6 +129,7 @@ strings=(
     "show_idx_doc_sources_all_cnts l filebeat*$(calc_date '1 days ago')"
     show_idx_doc_sources_all_k8sns_cnts
     "show_idx_doc_sources_all_k8sns_cnts l filebeat*$(calc_date '1 days ago')"
+    show_idx_doc_sources_all_k8sns_cnts_hourly
     showcfg_num_shards_per_idx
     "showcfg_num_shards_per_idx l"
     showcfg_shard_allocations
@@ -143,6 +148,14 @@ strings=(
     "show_idx_sizes l"
     show_idx_stats
     "show_idx_stats l"
+    show_idx_create_timestamps_utc
+    "show_idx_create_timestamps_utc p"
+    show_idx_create_timestamps_localtz_last20
+    "show_idx_create_timestamps_localtz_last20 p"
+    show_idx_types
+    "show_idx_types p"
+    show_idx_last10
+    "show_idx_last10 p"
     delete_idx
     showcfg_idx_cfgs
     "showcfg_idx_cfgs l"
@@ -150,6 +163,24 @@ strings=(
     "showcfg_idx_stats l"
     show_idx_version_cnts
     "show_idx_version_cnts l"
+    show_idx_mappings
+    "show_idx_mappings p"
+    clear_idx_cache_fielddata
+    clear_idx_cache_query
+    clear_idx_cache_request
+    clear_idx_cache_all
+    list_index_metric_types
+    "list_index_metric_types p"
+    show_field_capabilities
+    "show_field_capabilities p filebeat-60d*"
+    show_fields_multiple_defs_summary
+    "show_fields_multiple_defs_summary p filebeat-60d*"
+    show_field_X_multiple_defs_details
+    "show_field_X_multiple_defs_details p filebeat-60d* logstash.slowlog.plugin_params"
+    show_field_names
+    "show_field_names p filebeat-60d* | head -50"
+    show_field_counts
+    "show_field_counts p filebeat-60d*"
     show_excluded_nodes
     "show_excluded_nodes l"
     exclude_node_name
@@ -164,13 +195,46 @@ strings=(
     list_auth_rolemappings
     "list_auth_rolemappings l"
     evict_auth_cred_cache
+    create_bearer_token
     del_docs_k8s_ns_range
     forcemerge_to_expunge_deletes
     estail_deletebyquery
     estail_forcemerge
+    calc_total_docs_hdd_overXdays
+    "calc_total_docs_hdd_overXdays p 30"
+    calc_idx_type_avgs_overXdays
+    "calc_idx_type_avgs_overXdays p 30"
+    calc_num_nodes_overXdays
+    "calc_num_nodes_overXdays p 30"
+    list_ilm_policies
+    "list_ilm_policies p"
+    show_ilm_policy
+    "show_ilm_policy p filebeat-30d"
+    show_ilm_policies
+    "show_ilm_policies p"
+    list_aliases
+    "list_aliases p"
+    show_alias_details
+    "show_alias_details p"
+    show_alias_for_idxs
+    "show_alias_for_idxs p filebeat-60d"
+    list_writable_ilm_idxs_on_alias
+    "list_writable_ilm_idxs_on_alias p"
+    show_writable_ilm_idxs_on_alias_details
+    "show_writable_ilm_idxs_on_alias_details p"
+    explain_indexes_ilm
+    "explain_indexes_ilm p filebeat-60d-7.6.2*"
+    show_ilm_components_for_idx
+    "explain_indexes_ilm p filebeat-60d-7.6.2-2020.10.10-000110"
+    bootstrap_ilm_idx
+    trigger_ilm_rollover
     list_templates
     "list_templates l"
     show_template
+    show_template_idx_patterns
+    "show_template_idx_patterns p metricbeat*7.8.0*"
+    show_template_ilm_idx_alias_details
+    "show_template_ilm_idx_alias_details p metricbeat*7.8.0*"
 )
 
 printf "\n\n"
