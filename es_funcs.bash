@@ -1750,7 +1750,7 @@ show_idx_doc_sources_all_k8sns_cnts () {
 }
 
 show_idx_doc_sources_all_k8sns_cnts_hourly () {
-    # show the total num. docs each namespace sent to an index
+    # show the total num. docs each namespace sent to an index (last 3 hours, top 50 NS')
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
@@ -1772,7 +1772,7 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
 		  },
 		  "aggs": {
 		    "k8sns": {
-		        "terms" : { "field": "kubernetes.namespace",  "size": 10 },
+		        "terms" : { "field": "kubernetes.namespace",  "size": 50 },
 		        "aggs": {
 		          "hourly_buckets": {
 		            "date_histogram": {
@@ -1786,18 +1786,35 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
         }
 	EOM
     )
+
     cmdOutput=$(${escmd[$env]} GET ${idxArg}'/_search?pretty' -d "$SEARCHQUERY")
-    echo "$cmdOutput"
-    echo "$cmdOutput" \
-        | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[] | .' \
-        | grep -v '"key"' \
-        | paste - - - - - - - - - - - - - - - - \
-        | $sedCmd 's/[ \t]\+[{}]\+[ \t]\+/ /g' \
-        | $sedCmd 's/[ \t]\+[}{]\+[ \t]\+/ /g' #\
-        #| column -t
-    #    | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[].key_as_string, .hourly_buckets.buckets[].doc_count' \
-    #    | paste - - -  \
-    #    | column -t
+    #echo "$cmdOutput"
+    cmdOutputCondensed=$(
+        echo "$cmdOutput" \
+            | jq '.aggregations.k8sns.buckets[] | .key, .hourly_buckets.buckets[] | .' \
+            | grep -v '"key"' \
+            | paste - - - - - - - - - - - - - - - - - \
+            | $sedCmd  -e 's/[ \t]\+[{}]\+[ \t]\+/ /g' \
+                       -e 's/[ \t]\+[}{]\+[ \t]\+/ /g' \
+                       -e 's/[ \t]\+\}//g' \
+                       -e 's/[ \t]\+"key_as_string":[ ]\+/ /g' \
+                       -e 's/[ ]\+"doc_count":[ ]\+/ /g' \
+            | column -t
+    )
+
+    header=$(echo "$cmdOutputCondensed" | head -1 | awk '{print $2, $4, $6, $8}' | $sedCmd 's/[",]\+//g')
+    #echo "$header"
+
+    printf "\n\n"
+    (
+        echo "k8sns totalDocs $header"
+        printf "%s %s %s %s %s %s\n" "==========" "==========" "==========" "==========" "==========" "=========="
+        echo "$cmdOutput" \
+            | grep -E '"key"|"doc_count"' \
+            | grep -v '"key".*: [0-9]\+' \
+            | $sedCmd -e 's/.*doc_count.*: //g' -e 's/.*key.*: //g' -e 's/[",]\+//g'  \
+            | paste - - - - - -
+    ) | column -t
     printf "\n\n"
 }
 

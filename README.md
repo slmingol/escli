@@ -415,7 +415,7 @@ show_idx_retention_violations                  # shows the indexes which fall ou
 show_idx_doc_sources_1st_10k                   # show the hostnames that sent documents to an index
 show_idx_doc_sources_all_cnts                  # show the total num. docs each hostname sent to an index
 show_idx_doc_sources_all_k8sns_cnts            # show the total num. docs each namespace sent to an index
-show_idx_doc_sources_all_k8sns_cnts_hourly     # show the total num. docs each namespace sent to an index
+show_idx_doc_sources_all_k8sns_cnts_hourly     # show the total num. docs each namespace sent to an index (last 3 hours, top 50 NS')
 
 #11----------------------------------------------
 # shard funcs
