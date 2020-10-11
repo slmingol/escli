@@ -2792,7 +2792,7 @@ show_alias_details_excludeEmpty () {
     # show all _alias that are not '"aliases": {}'
     local env="$1"
     usage_chk1 "$env" || return 1
-    list_alias_details "$env" \
+    show_alias_details "$env" \
         | jq 'to_entries[] | if .value.aliases != {} then (.) else empty end'
 
 }
