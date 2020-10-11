@@ -171,7 +171,7 @@ julian_day () {
         && return 1
 
     local year="${1:0:4}"
-    local month="${1:4:2}"
+    local month="$(printf "%g" "${1:4:2}")"
     local day="$(printf "%g" "${1:6:2}")"
 
     #DEBUG# echo "$year - $month - $day"

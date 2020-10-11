@@ -204,6 +204,8 @@ strings=(
     estail_forcemerge
     calc_total_docs_hdd_overXdays
     "calc_total_docs_hdd_overXdays p 30"
+    calc_daily_docs_hdd_overXdays
+    "calc_daily_docs_hdd_overXdays p 30"
     calc_idx_type_avgs_overXdays
     "calc_idx_type_avgs_overXdays p 30"
     calc_num_nodes_overXdays
