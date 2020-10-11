@@ -160,7 +160,7 @@ retry_unassigned_shards
 show_shard_distribution_by_node_last3days
 show_hot_idxs_shard_distribution_by_node
 calc_hot_idxs_shard_sweet_spot
-show_shards_biggerthan50gb
+show_shards_biggerthan55gb
 show_idx_with_oversized_shards_summary
 show_idx_with_oversized_shards_details
 show_rebalance_throttle
@@ -185,7 +185,7 @@ show_readonly_idxs
 show_readonly_idxs_full
 clear_readonlyallowdel_idxs
 set_idx_default_field
-set_tmplate_default_field
+set_template_default_field
 set_idx_shards_per_node
 set_idx_max_docvalue_fields_search
 set_idx_num_replicas_to_X
@@ -203,8 +203,8 @@ show_watermarks
 show_state
 showcfg_cluster
 showrecov_stats
-shorecov_hot_threads
-shorecov_idx_shard_stats
+showrecov_hot_threads
+showrecov_idx_shard_stats
 show_stats_cluster
 show_tasks_stats
 verify_idx_retentions
@@ -232,7 +232,6 @@ showcfg_idx_cfgs
 showcfg_idx_stats
 show_idx_version_cnts
 show_idx_mappings
-#show_idx_rate
 clear_idx_cache_fielddata
 clear_idx_cache_query
 clear_idx_cache_request
@@ -337,7 +336,7 @@ show_nodes_threadpools_summary                 # list ES nodes thread pool (_cat
 show_shards                                    # list all the index shards sorted by size (big->small)
 show_big_shards                                # list top 20 shards for a given node's suffix (1a, 1b, etc.)
 show_small_shards                              # list smallest 20 shards for a given node's suffix (1a, 1b, etc.)
-show_hot_shards                                # list today's shards for a given node's suffix (1a, 1b, etc.)
+show_hot_shards                                # list today's "hot" shards for a given node's suffix (1a, 1b, etc.)
 show_shard_usage_by_node                       # list all the index shards sorted by size (big->small)
 relo_shard                                     # move an indices' shard from node suffix X to node suffix Y
 cancel_relo_shard                              # cancel move of an index shard from node suffix X
@@ -350,9 +349,9 @@ retry_unassigned_shards                        # reallocate all unassignable sha
 show_shard_distribution_by_node_last3days      # show distribution of day X's shards across nodes
 show_hot_idxs_shard_distribution_by_node       # show distribution of today's hot index shards across nodes
 calc_hot_idxs_shard_sweet_spot                 # calculate optimal number of hot index shards per node
-show_shards_biggerthan50gb                     # show shards which are > 50GB (too big)
-show_idx_with_oversized_shards_summary         # show summary of indexes w/ shards > 50GB (too big)
-show_idx_with_oversized_shards_details         # show detailed view of indexes w/ shards > 50GB (too big)
+show_shards_biggerthan55gb                     # show shards which are > 55GB (too big)
+show_idx_with_oversized_shards_summary         # show summary of indexes w/ shards > 55GB (too big)
+show_idx_with_oversized_shards_details         # show detailed view of indexes w/ shards > 55GB (too big)
 
 #7-----------------------------------------------
 # increase/decrease relo/recovery throttles
@@ -387,7 +386,7 @@ show_readonly_idxs                             # show indexes' read_only setting
 show_readonly_idxs_full                        # show indexes' read_only setting for all indices
 clear_readonlyallowdel_idxs                    # clear read_only_allow_delete flag
 set_idx_default_field                          # set index.query.default_field => [ "*" ]
-set_tmplate_default_field                      # set template index.query.default_field => [ "*" ]
+set_template_default_field                     # set template index.query.default_field => [ "*" ]
 set_idx_shards_per_node                        # set index.routing.allocation.total_shards_per_node = X
 set_idx_max_docvalue_fields_search             # set index.max_docvalue_fields_search = X
 set_idx_num_replicas_to_X                      # set an index's number_of_replicas to X
@@ -409,8 +408,8 @@ show_watermarks                                # show watermarks when storage ma
 show_state                                     # shows the state of the indicies' shards (RELO, Translog, etc.)
 showcfg_cluster                                # show all '_cluster/settings' configs
 showrecov_stats                                # show recovery stats (_recovery)
-shorecov_hot_threads                           # show hot thread details
-shorecov_idx_shard_stats                       # show an index's shard stats
+showrecov_hot_threads                          # show hot thread details
+showrecov_idx_shard_stats                      # show an index's shard stats
 show_stats_cluster                             # shows the _stats for entire cluster
 show_tasks_stats                               # shows the tasks queue
 verify_idx_retentions                          # shows the distribution of index retentions (days per index type & version)

@@ -111,10 +111,10 @@ strings=(
     "showcfg_cluster l"
     showrecov_stats
     "showrecov_stats l"
-    shorecov_hot_threads
-    "shorecov_hot_threads l"
-    shorecov_idx_shard_stats
-    "shorecov_idx_shard_stats l filebeat*$(calc_date '1 days ago')"
+    showrecov_hot_threads
+    "showrecov_hot_threads l"
+    showrecov_idx_shard_stats
+    "showrecov_idx_shard_stats l filebeat*$(calc_date '1 days ago')"
     show_stats_cluster
     "show_stats_cluster l"
     show_tasks_stats

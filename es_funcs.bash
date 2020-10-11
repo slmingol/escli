@@ -1541,14 +1541,14 @@ showrecov_stats () {
     ${escmd[$env]} GET '/_recovery?pretty' | jq -C . | less -r
 }
 
-shorecov_hot_threads () {
+showrecov_hot_threads () {
     # show hot thread details
     local env="$1"
     usage_chk1 "$env" || return 1
     ${escmd[$env]} GET '_nodes/_local/hot_threads'
 }
 
-shorecov_idx_shard_stats () {
+showrecov_idx_shard_stats () {
     # show an index's shard stats
     local env="$1"
     local idxArg="$2"
@@ -2072,7 +2072,7 @@ show_idx_mappings () {
         | less -r
 }
 
-#show_idx_rate () {
+#show_idx_rate \(\) {
 #    # show an index's _mappings (flattened) '<index name>/_mapping'
 #    local env="$1"
 #    #local idxArg="$2"
