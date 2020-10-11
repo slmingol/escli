@@ -26,6 +26,7 @@ strings=(
     "julian_day 20201010"
     ceiling_divide
     "ceiling_divide 99 2"
+    help_cat
     list_nodes
     "list_nodes l"
     list_nodes_storage
