@@ -22,6 +22,8 @@ strings=(
     "calc_date_1dayafter '2000-10-31'"
     calc_millis_date
     "calc_millis_date 1599861452868" 
+    julian_day
+    "julian_day 20201010"
     list_nodes
     "list_nodes l"
     list_nodes_storage
