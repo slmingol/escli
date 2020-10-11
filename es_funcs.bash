@@ -2234,7 +2234,7 @@ show_fields_multiple_defs_details () {
 
     colWidth="50"
 
-    problemFields="$(show_fields_multiple_defs "$env" "$idxArg" | grep -vE '^$|field|^---' | awk '{print $1}')"
+    problemFields="$(show_fields_multiple_defs_summary "$env" "$idxArg" | grep -vE '^$|field|^---' | awk '{print $1}')"
 
     printf "\n\n"
     for field in $problemFields; do
