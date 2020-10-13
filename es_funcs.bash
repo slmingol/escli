@@ -2038,29 +2038,36 @@ delete_idx () {
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
+
     # Ensure user knows what they are deleting
     indices=$(${escmd[$env]} GET "_cat/indices/${idxArg}?pretty&v&human")
+
     # If valid json is returned, this means there was an error
     # If an error, go ahead and bomb out
     if jq -e . >/dev/null 2>&1 <<<"${indices}"; then
-        echo "That indice search pattern does not exist"
-        echo "Nothing to delete"
+        printf "\n\n"
+        printf "The indice search pattern [%s] has no matches, nothing to delete\n" "$idxArg"
+        printf "\n\n"
         return 1
     fi
     lines=$(printf "${indices}" | wc -l)
     if [ $lines -eq 0 ]; then
-        echo "That indice search pattern does not exist"
-        echo "Nothing to delete"
+        printf "\n\n"
+        printf "The indice search pattern [%s] doesn't exist, nothing to delete\n" "$idxArg"
+        printf "\n\n"
         return 1
     fi
     printf "${indices}\n"
-    echo ""
-    echo 'Are you sure you want to delete the indices? (y/n)'
+    printf "\n\n"
+    printf "Are you sure you want to delete the indices? (y/n)\n"
     read decision
     if [ $decision = "y" ]; then
+        printf "\n\n"
         ${escmd[$env]} DELETE "$idxArg"
+        printf "\n\n"
     elif [ $decision != "n" ]; then
-        echo "Decision must be literal 'y' or 'n', please try again"
+        printf "Decision must be literal 'y' or 'n', please try again\n"
+        printf "\n\n"
         return 1
     fi
 }
