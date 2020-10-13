@@ -2034,12 +2034,14 @@ show_idx_last10 () {
 }
 
 delete_idx () {
-    # delete an index
+    # delete an index, asks for confirmation to delete indices
     local env="$1"
     local idxArg="$2"
     usage_chk3 "$env" "$idxArg" || return 1
     # Ensure user knows what they are deleting
     indices=$(${escmd[$env]} GET "_cat/indices/${idxArg}?pretty&v&human")
+    # If valid json is returned, this means there was an error
+    # If an error, go ahead and bomb out
     if jq -e . >/dev/null 2>&1 <<<"${indices}"; then
         echo "That indice search pattern does not exist"
         echo "Nothing to delete"
