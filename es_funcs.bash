@@ -2047,7 +2047,14 @@ delete_idx () {
         echo "Nothing to delete"
         return 1
     fi
+    lines=$(printf "${indices}" | wc -l)
+    if [ $lines -eq 0 ]; then
+        echo "That indice search pattern does not exist"
+        echo "Nothing to delete"
+        return 1
+    fi
     printf "${indices}\n"
+    echo ""
     echo 'Are you sure you want to delete the indices? (y/n)'
     read decision
     if [ $decision = "y" ]; then
