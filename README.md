@@ -438,7 +438,7 @@ show_idx_create_timestamps_utc                 # show index creation timestamps 
 show_idx_create_timestamps_localtz_last20      # show index creation timestamps sorted (oldest -> newest) for last 20 indexes created
 show_idx_types                                 # show idx types [beat type] - [retention period] - [beat version]
 show_idx_last10                                # show last 10 indexes (by date) for a given idx pattern
-delete_idx                                     # delete an index
+delete_idx                                     # delete an index, asks for confirmation to delete indices
 showcfg_idx_cfgs                               # show all '<index name>/_settings' configs
 showcfg_idx_stats                              # show all '<index name>/_stats'
 show_idx_version_cnts                          # show index sizes sorted (big -> small)
