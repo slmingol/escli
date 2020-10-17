@@ -1568,6 +1568,25 @@ show_tasks_stats () {
     ${escmd[$env]} GET '_cat/tasks?human&pretty&detailed&v'
 }
 
+show_tasks_pending () {
+    # shows the pending tasks queue
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_cluster/pending_tasks?human&pretty'
+}
+
+show_tasks_descriptions () {
+    # shows the description of queued tasks
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd[$env]} GET '_tasks?actions=*&pretty&detailed&filter_path=**.description,nodes.*.name' \
+        | grep -E '"name"|"description"'
+##     attempt to show 429's on server side
+##     ${escmd[$env]} GET '_tasks?actions=*&pretty&detailed&filter_path=**.description,nodes.*.name' \
+##         | grep -E '"name"|"description"' \
+##         | grep -E '"name"|429'
+}
+
 verify_idx_retentions () {
     # shows the distribution of index retentions (days per index type & version)
     local env="$1"

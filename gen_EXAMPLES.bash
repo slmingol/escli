@@ -119,6 +119,10 @@ strings=(
     "show_stats_cluster l"
     show_tasks_stats
     "show_tasks_stats l"
+    show_tasks_pending
+    "show_tasks_pending l"
+    show_tasks_descriptions
+    "show_tasks_descriptions l"
     verify_idx_retentions
     "verify_idx_retentions l"
     show_idx_retention_violations

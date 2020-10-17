@@ -206,6 +206,8 @@ showrecov_hot_threads
 showrecov_idx_shard_stats
 show_stats_cluster
 show_tasks_stats
+show_tasks_pending
+show_tasks_descriptions
 verify_idx_retentions
 show_idx_retention_violations
 show_idx_doc_sources_1st_10k
@@ -410,6 +412,8 @@ showrecov_hot_threads                          # show hot thread details
 showrecov_idx_shard_stats                      # show an index's shard stats
 show_stats_cluster                             # shows the _stats for entire cluster
 show_tasks_stats                               # shows the tasks queue
+show_tasks_pending                             # shows the pending tasks queue
+show_tasks_descriptions                        # shows the description of queued tasks
 verify_idx_retentions                          # shows the distribution of index retentions (days per index type & version)
 show_idx_retention_violations                  # shows the indexes which fall outside a given retention window (days)
 show_idx_doc_sources_1st_10k                   # show the hostnames that sent documents to an index
