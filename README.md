@@ -244,6 +244,7 @@ show_fields_multiple_defs_details
 show_field_X_multiple_defs_details
 show_field_names
 show_field_counts
+list_node_name_suffixes
 show_excluded_nodes
 exclude_node_name
 clear_excluded_nodes
@@ -466,6 +467,7 @@ show_field_counts                              # Return a count of fields in a g
 #14----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
+list_node_name_suffixes                        # show node name suffixes
 show_excluded_nodes                            # show excluded nodes from cluster
 exclude_node_name                              # exclude a node from cluster (node suffix)
 clear_excluded_nodes                           # clear any excluded cluster nodes

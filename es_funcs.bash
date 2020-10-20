@@ -635,7 +635,7 @@ show_big_shards () {
     local env="$1"
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
-    show_shards "$env" | grep -E "index|${node}" | head -40
+    show_shards "$env" | grep -E "^index|${node}$" | head -40
 }
 
 show_small_shards () {
@@ -643,14 +643,14 @@ show_small_shards () {
     local env="$1"
     local node="$2"
     usage_chk2 "$env" "$node" || return 1
-    show_shards "$env" | grep -E "index|${node}" | tail -40
+    show_shards "$env" | grep -E "^index|${node}$" | tail -40
 }
 
 show_hot_shards () {
     # list today's "hot" shards for a given node's suffix (1a, 1b, etc.)
     local env="$1"
     local node="$2"
-    usage_chk2 "$env" "$node" || return 1
+    usage_chk2 "$env" "${node}$" || return 1
 
     showShards=$(show_shards "$env")
     showShardsHeader=$(echo "$showShards" | grep '^index')
@@ -2366,6 +2366,17 @@ show_field_counts () {
 #14----------------------------------------------
 # node exclude/include funcs
 ##-----------------------------------------------
+list_node_name_suffixes () {
+    # show node name suffixes
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    output=$(${escmd[$env]} GET '_cat/nodes?v&h=ip,heap.percent,ram.percent,cpu,load_1m,load_5m,load_15m,node.role,master,name,disk.total,disk.used,disk.avail,disk.used_percent&s=name:asc')
+    dnodes=$(echo "${output}" | awk '/data|di.*instance/ { print $10 }' | sed 's/.*-00*//' | sort | paste -s -d"," -)
+    printf "\nList data node name suffixes"
+    printf "\n============================"
+    printf "\n%s\n\n" "${dnodes}"
+}
+
 show_excluded_nodes () {
     # show excluded nodes from cluster
     local env="$1"
