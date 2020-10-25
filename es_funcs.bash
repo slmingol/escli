@@ -825,7 +825,7 @@ show_hot_idxs_shard_distribution_by_node () {
     local env="$1"
     usage_chk1 "$env" || return 1
 
-    shardDetailsFull=$(show_shards "$env" | grep -vE '^\.|default|ilm|index')
+    shardDetailsFull=$(show_shards "$env" | grep 'STARTED' | grep -vE '^\.|default|ilm|index')
     uniqueIdxTypes=$(echo "$shardDetailsFull" | awk '{print $1}' | rev | cut -d"-" -f2- | cut -d"-" -f2- | rev | sort -u)
 
     mostRecentIdxs=$(
@@ -1098,7 +1098,7 @@ change_allocation_threshold () {
     ALLOC=$(cat <<-EOM
         {
             "persistent": {
-                "cluster.routing.allocation.balance.threshold"  :   3.0
+                "cluster.routing.allocation.balance.threshold"  :   1.0
             }
         }
 	EOM
@@ -2400,6 +2400,8 @@ exclude_node_name () {
 
     ip=$(host "$name" | awk '{print $4}')
 
+    #name="es-data-01af.rdu1.bwnet.us"
+    #ip="192.168.138.78"
     EXCLUDENAME=$(cat <<-EOM
         {
          "transient": {
