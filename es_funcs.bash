@@ -237,7 +237,7 @@ usage_chk2 () {
     local node="$2"
 
     [[ $env =~ [lpc] && $node =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <node suffix--[1a|1b|1c|1d...]>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <node suffix--[1a|1b|1c|1d...]>\n\n$(list_node_name_suffixes $env)\n\n" \
         && return 1
 }
 
