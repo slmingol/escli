@@ -237,7 +237,7 @@ usage_chk2 () {
     local node="$2"
 
     [[ $env =~ [lpc] && $node =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <node suffix--[1a|1b|1c|1d...]>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <node suffix--[1a|1b|1c|1d...]>\n$(list_node_name_suffixes_usage_helper $env)\n\n" \
         && return 1
 }
 
@@ -261,7 +261,7 @@ usage_chk4 () {
     [[ $env =~ [lpc] && $shardName != '' \
         && $shardNum != '' \
         && $nodeCode =~ 1[a-z] || $nodeCode =~ [0-9]{3} ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from/to node>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from/to node>\n$(list_node_name_suffixes_usage_helper $env)\n\n" \
         && return 1
 }
 
@@ -277,7 +277,7 @@ usage_chk5 () {
         && $shardNum != '' \
         && $fromCode =~ 1[a-z] \
         && $toCode =~ 1[a-z] ]] && return 0 || \
-        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from node> <to node>\n\n" \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <shard name> <shard num> <from node> <to node>\n$(list_node_name_suffixes_usage_helper $env)\n\n" \
         && return 1
 }
 
@@ -457,6 +457,14 @@ usage_chk18 () {
     [[ $env =~ [lpc] && $aliasArg != '' ]] && return 0 || \
         printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <alias>\n\n" \
         && return 1
+}
+
+list_node_name_suffixes_usage_helper () {
+  local env="$1"
+
+  if [[ ! -z $env ]]; then
+    list_node_name_suffixes $env
+  fi
 }
 
 
