@@ -3090,6 +3090,27 @@ show_template_ilm_idx_alias_details () {
 
 
 
+#20----------------------------------------------
+# plugin funcs
+##-----------------------------------------------
+list_plugins () {
+    # show all plugins installed on cluster
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd["$env"]} GET '_cat/plugins' | awk '{print $2}' | sort -u
+}
+
+chk_s3_plugin_nodes () {
+    # check that each node reports having access to s3 plugin
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    sdiff \
+        <(${escmd["$env"]}  GET '_cat/plugins?s=component&h=name,component,version' \
+            | awk '/repository-s3/ {print $1}' | sort -k1,1) \
+        <(list_nodes p | awk '{print $10}' | grep -vE '^$|^name')
+}
+
+
 ###############################################################################
 ###############################################################################
 

@@ -280,6 +280,8 @@ list_templates
 show_template
 show_template_idx_patterns
 show_template_ilm_idx_alias_details
+list_plugins
+chk_s3_plugin_nodes
 ```
 
 You can also get that list with a short description of each function:
@@ -523,6 +525,12 @@ list_templates                                 # show all template details
 show_template                                  # show template X's details
 show_template_idx_patterns                     # show index_patterns for templates that match provided pattern 
 show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
+
+#20----------------------------------------------
+# plugin funcs
+##-----------------------------------------------
+list_plugins                                   # show all plugins installed on cluster
+chk_s3_plugin_nodes                            # check that each node reports having access to s3 plugin
 
 
 ```
