@@ -137,6 +137,7 @@ julian_day
 ceiling_divide
 escli_ls
 escli_lsl
+list_node_name_suffixes_usage_helper
 help_cat
 help_indices
 list_nodes
@@ -198,6 +199,7 @@ estop_idx_indexing
 estop_node_indexing
 estop_unassigned_shards
 show_health
+show_cluster_stats
 show_watermarks
 show_state
 showcfg_cluster
@@ -282,6 +284,8 @@ show_template_idx_patterns
 show_template_ilm_idx_alias_details
 list_plugins
 chk_s3_plugin_nodes
+list_plugins
+chk_s3_plugin_nodes
 ```
 
 You can also get that list with a short description of each function:
@@ -314,6 +318,7 @@ ceiling_divide                                 # ceiling divide 2 numbers
 ##-----------------------------------------------
 escli_ls                                       # list function names
 escli_lsl                                      # list function names + desc.
+list_node_name_suffixes_usage_helper         local env="$1"
 
 #3-----------------------------------------------
 # help funcs
@@ -407,6 +412,7 @@ estop_idx_indexing                             # watches ES indexing activities 
 estop_node_indexing                            # watches ES indexing activities for nodes
 estop_unassigned_shards                        # watches ES shards that are UNASSIGNED
 show_health                                    # cluster's health stats
+show_cluster_stats                             # show cluster stats (_cluster/stats?pretty&human)
 show_watermarks                                # show watermarks when storage marks readonly
 show_state                                     # shows the state of the indicies' shards (RELO, Translog, etc.)
 showcfg_cluster                                # show all '_cluster/settings' configs
@@ -527,6 +533,12 @@ show_template_idx_patterns                     # show index_patterns for templat
 show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
 
 #20----------------------------------------------
+# plugin funcs
+##-----------------------------------------------
+list_plugins                                   # show all plugins installed on cluster
+chk_s3_plugin_nodes                            # check that each node reports having access to s3 plugin
+
+
 # plugin funcs
 ##-----------------------------------------------
 list_plugins                                   # show all plugins installed on cluster

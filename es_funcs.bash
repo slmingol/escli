@@ -1477,6 +1477,13 @@ show_health () {
     ${escmd[$env]} GET '_cluster/health?pretty'
 }
 
+show_cluster_stats () {
+    # show cluster stats (_cluster/stats?pretty&human)
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${escmd["$env"]} GET '_cluster/stats?pretty&human'
+}
+
 show_watermarks () {
     # show watermarks when storage marks readonly
     local env="$1"
