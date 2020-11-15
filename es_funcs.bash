@@ -2640,6 +2640,8 @@ calc_daily_docs_hdd_overXdays () {
     local days="$2"
     usage_chk10 "$env" "$days" || return 1
 
+    local DEBUG="off" #[off|on]
+
     dateRange=$(for i in $(seq 0 $(($days - 1)) ); do calc_date "$i days ago"; done | $pasteCmd -s -d '|')
     dateRangeInOrder=$(
         echo "$dateRange" \
@@ -2660,6 +2662,11 @@ calc_daily_docs_hdd_overXdays () {
         printf "==== ========= =========== ========= =============== =========\n"
 
         for day in $dateRangeInOrder; do
+            [[ $DEBUG == "on" ]] && printf "\n%s\n%s\n%s\n" \
+                "==================" \
+                "$(echo "$idxData" | grep "$day")" \
+                "=================="
+
             dayTally="$(
                 echo "$idxData" \
                     | grep "$day" \
@@ -2696,9 +2703,15 @@ calc_idx_type_avgs_overXdays () {
     local idxTypes="$(echo "$idxData" \
         | awk '{print $1}' \
         | sed 's/-[0-9]\{4\}.*//' \
-        | sort -u \
-        | grep -vE 'kibana|monitoring|apm|security|index|watcher|tasks|ilm|management|reporting'
+        | sort -u
     )"
+
+    dateRange=$(for i in $(seq 1 $days); do calc_date "$i days ago"; done | $pasteCmd -s -d '|')
+    dateRangeInOrder=$(
+        echo "$dateRange" \
+            | sed 's/\|/ /g' \
+            | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}'
+    )
 
     printf "\n\n"
 
@@ -2709,22 +2722,37 @@ calc_idx_type_avgs_overXdays () {
                 echo "$idxData" \
                     | grep "$idx" \
                     | sort -k1,1 \
-                    | awk -v idxCutOff="${idx}-${xDaysAgo}" '$1 > idxCutOff'
+                    | awk -v idxCutOff="${idx}-${xDaysAgo}" '$1 > idxCutOff' \
+                    | grep -v "$(calc_date '0 days ago')"
             )"
 
-            [[ $DEBUG == "on" ]] && printf "\n===> [idxType: %s]\n%s\n" "$idx" "$idxDataWithinCutoff"
+            [[ $DEBUG == "on" ]] && printf "\n===> [cutoffdata: %s]\n%s\n" "$idx" "$idxDataWithinCutoff"
 
             # skip if no indexes occur w/in cutoff's range
             echo "$idxDataWithinCutoff" \
                 | awk -v idx="${idx}" '$1 ~ idx { count++ } END { printf("%d\n"), count }' \
                 | grep -q "^0$" \
                 && continue  
-            
+
+            local dayTally=$(
+              for day in $dateRangeInOrder; do
+                echo -n "${idx}-${day}  "
+                echo "$idxDataWithinCutoff" \
+                  | grep "$day" \
+                  | awk '{ total2 += $2; total3 += $3; total4 += $4; total5 += $5 } END \
+                         { printf("%0.0f %0.0f %0.0f %0.0f"), total2, total3, total4, total5 }'
+                echo
+              done
+            )
+
+            [[ $DEBUG == "on" ]] && printf "\n===> [day tallies]\n%s\n" "$dayTally"
+
             # found at least 1 idx for idxType, analyze em
+            [[ $DEBUG == "on" ]] && printf "\n===> [total]\n"
             {
              printf "%s\n" "$idx"
-             echo "$idxDataWithinCutoff" \
-                 | awk '$5 == 0 { $5 = 1 } 1' \
+                 #| awk '$5 == 0 { $5 = 1 } 1' \
+             echo "$dayTally" \
                  | awk '{ total1 += $4; count1++; total2 += $5; count2++ } END \
                             { printf("%0.0f %0.0f %0.0f %0.0f %g\n"), \
                                 total1/count1, total2/count2, 60*(total1/count1), 60*(total2/count2), count2 }'
