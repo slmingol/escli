@@ -12,7 +12,7 @@ This repo includes a CLI tool to simplify interacting with the Elasticsearch RES
     - `grep -q "/usr/local/bin/bash" /etc/shells || echo '/usr/local/bin/bash' | sudo tee -a /etc/shells` to add the brew installed bash to the list of approved shells
     - `chsh -s /usr/local/bin/bash` to switch to the brew installed bash shell permanently
 - ***(Preferred)*** Your credentials are stored in LastPass
-- ***(Preferred)*** You have the LastPass CLI tool installed, `lpass` via `brew`
+- ***(Preferred)*** You have the LastPass CLI tool installed, `lpass` via `brew` (`brew install lastpass-cli`)
 - ***(Alternative)*** Use some other method to provide credentials (see ``escli.conf.sample`` for other methods)
 
 - Make a copy of `escli.conf.sample` to `escli.conf` and customize (follow guidances within file)
