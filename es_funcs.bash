@@ -1852,6 +1852,13 @@ show_idx_doc_sources_all_k8sns_cnts_hourly () {
     printf "\n\n"
 }
 
+show_es_eol () {
+    # show EOL for various ES products such as *beats, etc.
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    open 'https://www.elastic.co/support/eol'
+}
+
 
 
 #11----------------------------------------------
