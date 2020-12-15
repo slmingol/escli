@@ -1859,6 +1859,12 @@ show_es_eol () {
     open 'https://www.elastic.co/support/eol'
 }
 
+show_es_ecs () {
+    # show EOL for various ES products such as *beats, etc.
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    open 'https://www.elastic.co/guide/en/ecs/current/ecs-field-reference.html'
+}
 
 
 #11----------------------------------------------
