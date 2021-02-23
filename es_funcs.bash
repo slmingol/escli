@@ -459,6 +459,18 @@ usage_chk18 () {
         && return 1
 }
 
+usage_chk19 () {
+    # usage msg for cmds w/ 2 arg (where 2nd arg. is a integer (days))
+    local env="$1"
+    local days="$2"
+
+    [[ $env =~ [lpc] && ( $days =~ ^[0-9]{1,3}$ && $days -gt 0 && $days -lt 366 ) ]] && return 0 || \
+        printf "\nUSAGE: ${FUNCNAME[1]} [l|p|c] <days>\n\n" \
+        && printf "  * days: [1|5|30|45|90|365]\n\n" \
+        && printf "  NOTE: ...minimum is 1, the max. 365!...\n\n\n" \
+        && return 1
+}
+
 list_node_name_suffixes_usage_helper () {
   local env="$1"
 
@@ -2056,7 +2068,7 @@ show_idx_types () {
     # show idx types [beat type] - [retention period] - [beat version]
     local env="$1"
     usage_chk1 "$env" || return 1
-    show_idx_sizes p \
+    show_idx_sizes "$env" \
         | grep -vE '^index|^\.|^ilm' \
         | sort -k1,1 \
         | awk '{print $1}' \
@@ -2651,7 +2663,7 @@ calc_daily_docs_hdd_overXdays () {
     # calc. the individual daily total docs & HDD storage used by all indices over X days
     local env="$1"
     local days="$2"
-    usage_chk10 "$env" "$days" || return 1
+    usage_chk19 "$env" "$days" || return 1
 
     local DEBUG="off" #[off|on]
 
@@ -2708,7 +2720,7 @@ calc_idx_type_avgs_overXdays () {
     local days="$2"
     usage_chk10 "$env" "$days" || return 1
 
-    local DEBUG="off" #[off|on]
+    local DEBUG="on" #[off|on]
 
     local idxData="$(show_idx_sizes "$env")"
     local xDaysAgo="$(calc_date "${days} days ago")"
