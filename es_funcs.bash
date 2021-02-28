@@ -1479,7 +1479,7 @@ estop_unassigned_shards () {
     # watches ES shards that are UNASSIGNED
     local env="$1"
     usage_chk1 "$env" || return 1
-    watch -x bash -c ". ${filename}; show_shards p | grep UNASS | wc -l"
+    watch -x bash -c ". ${filename}; show_shards ${env} | grep UNASS | wc -l"
 }
 
 show_health () {
