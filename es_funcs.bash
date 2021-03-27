@@ -845,7 +845,7 @@ show_hot_idxs_shard_distribution_by_node () {
     local env="$1"
     usage_chk1 "$env" || return 1
 
-    shardDetailsFull=$(show_shards "$env" | grep 'STARTED' | grep -vE '^\.|default|ilm|index')
+    shardDetailsFull=$(show_shards "$env" | grep 'STARTED' | grep -vE '^\.|ilm|index')
     uniqueIdxTypes=$(echo "$shardDetailsFull" | awk '{print $1}' | rev | cut -d"-" -f2- | cut -d"-" -f2- | rev | sort -u)
 
     mostRecentIdxs=$(
