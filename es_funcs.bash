@@ -2440,8 +2440,8 @@ exclude_node_name () {
 
     ip=$(host "$name" | awk '{print $4}')
 
-    #name="es-data-01af.rdu1.bwnet.us"
-    #ip="192.168.138.78"
+##    name="es-data-01aa.rdu1.bwnet.us"
+##    ip="192.168.138.71"
     EXCLUDENAME=$(cat <<-EOM
         {
          "transient": {

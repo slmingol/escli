@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #------------------------------------------------
 # Detect how we were called [l|p]
