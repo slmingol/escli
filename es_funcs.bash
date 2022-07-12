@@ -714,7 +714,7 @@ show_shard_usage_by_node () {
     (
     echo "node #shards"
     echo "---- -------"
-    show_shards "$env" | awk '{print $8}' | grep -v node | sort | uniq -c | awk '{print $2, $1}'
+    show_shards "$env" | awk '{print $(NF)}' | grep -v node | sort | uniq -c | awk '{print $2, $1}'
     ) | column -t 
     echo ""
 }
