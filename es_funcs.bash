@@ -833,7 +833,7 @@ show_shard_distribution_by_node_last3days () {
         (
             printf "node #shards\n"
             printf -- "---- -------\n"
-            show_shards "$env" | grep "$YYmmdd" | awk '{print $8}' | sort | uniq -c | awk '{print $2, $1}'
+            show_shards "$env" | grep "$YYmmdd" | awk '{print $NF}' | sort | uniq -c | awk '{print $2, $1}'
         ) | column -t
         printf "\n==============================================\n"
     done
