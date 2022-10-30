@@ -121,7 +121,7 @@ $
 
 This is a list of the functions it provides:
 ```
-$ escli_ls
+ $ ▶ escli_ls
 gen_README
 cmp_README
 mk_README
@@ -216,6 +216,8 @@ show_idx_doc_sources_1st_10k
 show_idx_doc_sources_all_cnts
 show_idx_doc_sources_all_k8sns_cnts
 show_idx_doc_sources_all_k8sns_cnts_hourly
+show_es_eol
+show_es_ecs
 showcfg_num_shards_per_idx
 showcfg_shard_allocations
 explain_allocations
@@ -282,8 +284,6 @@ list_templates
 show_template
 show_template_idx_patterns
 show_template_ilm_idx_alias_details
-list_plugins
-chk_s3_plugin_nodes
 list_plugins
 chk_s3_plugin_nodes
 ```
