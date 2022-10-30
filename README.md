@@ -28,29 +28,26 @@ The `es_funcs.bash` includes Bash functions which can be sourced into your shell
 Finally there's a file `cmds.md` which includes examples with output showcasing how to use the `escli.bash` CLI tool.
 
 ```
-$ tree -I '*ARCHIVE*|*WIP*' -L 3
+ $ ▶ tree -I '*ARCHIVE*|*WIP*' -L 3
 .
+├── EXAMPLES.md
 ├── LICENSE
 ├── README.md
 ├── cmds.md
 ├── es_funcs.bash
 ├── esc -> escli.bash
 ├── escli.bash
-├── escli.conf
 ├── escli.conf.sample
-├── escli_c.conf
 ├── escli_c.conf.sample
 ├── esl -> escli.bash
 ├── esp -> escli.bash
-├── upgrade_notes.txt
-├── urls.txt
+├── gen_EXAMPLES.bash
 ├── zencli.bash
-├── zencli.conf
 ├── zencli.conf.sample
 ├── zsl -> zencli.bash
 └── zsp -> zencli.bash
 
-0 directories, 19 files
+0 directories, 16 files
 ```
 
 ### USAGE
