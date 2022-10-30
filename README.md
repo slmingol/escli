@@ -290,7 +290,7 @@ chk_s3_plugin_nodes
 
 You can also get that list with a short description of each function:
 ```
-$ escli_lsl
+ $ ▶ escli_lsl
 
 #0-----------------------------------------------
 # helper funcs
@@ -429,6 +429,8 @@ show_idx_doc_sources_1st_10k                   # show the hostnames that sent do
 show_idx_doc_sources_all_cnts                  # show the total num. docs each hostname sent to an index
 show_idx_doc_sources_all_k8sns_cnts            # show the total num. docs each namespace sent to an index
 show_idx_doc_sources_all_k8sns_cnts_hourly     # show the total num. docs each namespace sent to an index (last 3 hours, top 50 NS')
+show_es_eol                                    # show EOL for various ES products such as *beats, etc.
+show_es_ecs                                    # show EOL for various ES products such as *beats, etc.
 
 #11----------------------------------------------
 # shard funcs
@@ -529,16 +531,10 @@ trigger_ilm_rollover                           # trigger ILM to rollover current
 ##-----------------------------------------------
 list_templates                                 # show all template details
 show_template                                  # show template X's details
-show_template_idx_patterns                     # show index_patterns for templates that match provided pattern 
-show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern 
+show_template_idx_patterns                     # show index_patterns for templates that match provided pattern
+show_template_ilm_idx_alias_details            # show index_patterns, ilm-policy, & rollover alias for templates that match provided pattern
 
 #20----------------------------------------------
-# plugin funcs
-##-----------------------------------------------
-list_plugins                                   # show all plugins installed on cluster
-chk_s3_plugin_nodes                            # check that each node reports having access to s3 plugin
-
-
 # plugin funcs
 ##-----------------------------------------------
 list_plugins                                   # show all plugins installed on cluster
