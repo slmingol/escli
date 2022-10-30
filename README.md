@@ -56,7 +56,7 @@ Finally there's a file `cmds.md` which includes examples with output showcasing 
 The `escli.bash` has 2 "personalities" on which it can operate. When you want to use the "lab" persona, you'd invoke it using the `./esl` symbolic link.
 
 ```
-$ ./esl
+ $ ▶ ./esl
 
     USAGE: ./esl [HEAD|GET|PUT|POST] '...ES REST CALL...'
 
