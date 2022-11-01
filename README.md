@@ -542,7 +542,7 @@ chk_s3_plugin_nodes                            # check that each node reports ha
 
 Each function includes a 'show usage' if you run it without any arguments. For example:
 ```
-$ list_nodes
+$ ▶ list_nodes
 
 USAGE: list_nodes [l|p|c]
 
