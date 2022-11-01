@@ -92,7 +92,7 @@ $ ▶ ./esp
 
 Additionally if you maintain a cluster that's hosted via Elastic's found.io domain you can use the `./esc` symbolic link.
 ```
-./esc
+$ ▶ ./esc
 
     USAGE: ./esc [HEAD|GET|PUT|POST] '...ES REST CALL...'
 
