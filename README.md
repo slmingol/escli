@@ -112,8 +112,8 @@ $ ▶ ./esc
 If you'd like to make use of the helper functions within the file `es_funcs.bash` you simply source this file into your existing shell.
 
 ```
-$ . es_funcs.bash
-$
+$ ▶ . es_funcs.bash
+$ ▶ 
 ```
 
 This is a list of the functions it provides:
