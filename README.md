@@ -74,7 +74,7 @@ The `escli.bash` has 2 "personalities" on which it can operate. When you want to
 
 Alternatively, when wanting to use the "production" persona, you'd invoke it using the `./esp` symbolic link.
 ```
-$ ./esp
+$ ▶ ./esp
 
     USAGE: ./esp [HEAD|GET|PUT|POST] '...ES REST CALL...'
 
