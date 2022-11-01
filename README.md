@@ -591,7 +591,7 @@ $ del_docs_k8s_ns_range l filebeat-6.5.1-2019.07.31 flex-generator 2019-07-31T13
 ```
 
 ```
-$ estail_deletebyquery l
+$ ▶ estail_deletebyquery l
 estail_deletebyquery
 ===================================
 indices:data/write/delete/byquery  transport  43m    lab-rdu-es-data-01a
