@@ -555,7 +555,7 @@ Most of the functions will take a single argument, either `l` or `p` or `c` to d
 #### Deleting docs from an index
 
 ```
-$ del_docs_k8s_ns_range
+$ ▶ del_docs_k8s_ns_range
 
 USAGE: del_docs_k8s_ns_range [l|p|c] <idx pattern> <k8s namespace> <start time> <end time>
 
