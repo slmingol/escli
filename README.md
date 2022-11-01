@@ -616,7 +616,7 @@ done
 ```
 
 ```
-$ forcemerge_to_expunge_deletes l filebeat-6.5.1-2019.07.31
+$ ▶ forcemerge_to_expunge_deletes l filebeat-6.5.1-2019.07.31
 ...
 ... Ctrl-C at any time, it's scheduled
 ...
