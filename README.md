@@ -623,7 +623,7 @@ $ ▶ forcemerge_to_expunge_deletes l filebeat-6.5.1-2019.07.31
 ```
 
 ```
-$ estail_forcemerge l
+$ ▶ estail_forcemerge l
 estail_forcemerge
 ===================================
 indices:admin/forcemerge     transport  15.1m  lab-rdu-es-data-01a
