@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
 #------------------------------------------------
-# Detect how we were called [l|p]
+# Detect how we were called es or kb and [l|p|c] for env
 #------------------------------------------------
 calledCmd="$(basename $0)"
 [[ $calledCmd == "esl" ]] && env="lab1"
 [[ $calledCmd == "esp" ]] && env="rdu1"
 [[ $calledCmd == "esc" ]] && env="aws1"
+[[ $calledCmd == "kbl" ]] && env="lab1" && kbHost="logs-lab"
+[[ $calledCmd == "kbp" ]] && env="rdu1" && kbHost="logs"
+[[ $calledCmd == "kbc" ]] && env="aws1" && kbHost="XXXXX"
 
 #------------------------------------------------
 # source escli.conf variables
@@ -17,13 +20,12 @@ calledCmd="$(basename $0)"
 # source default escli.conf
 . $(dirname $($readlink -f $0))/escli.conf
 # source secondary escli_c.conf if called w/ esc
-[ "$env" == "aws1" ] && . $(dirname $($readlink -f $0))/escli_c.conf
-
+[[ "$env" == "aws1" ]] && . $(dirname $($readlink -f $0))/escli_c.conf
 
 usage () {
     cat <<-EOF
 
-    USAGE: $0 [HEAD|GET|PUT|POST] '...ES REST CALL...'
+    USAGE: $0 [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
 
     EXAMPLES:
 
@@ -41,6 +43,16 @@ usage () {
 
 [ "$1" == "" ] && usage
 
+# Target either Elastic or Kibana URL + content type
+baseUrl=""
+conType=""
+if [[ $calledCmd == "esl" || $calledCmd == "esp" || $calledCmd == "esc" ]]; then
+    baseUrl=$esBaseUrl
+    conType=$esContType
+else
+    baseUrl=$kbBaseUrl
+    conType=$kbContType
+fi
 
 #------------------------------------------------
 # retrieves user/pass, replace them....
@@ -56,23 +68,23 @@ arg4=$(echo "$tmpArg4" | sed -e "s|XXXXXXXX|$(${usernameCmd})|" -e "s|YYYYYYYY|$
 if [ "${1}" == "HEAD" ]; then
     curl -I -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        "${esBaseUrl}/$2"
+        "${baseUrl}/$2"
 elif [ "${1}" == "PUT" ]; then
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4"
+        -X$1 -H "${conType}" "${baseUrl}/$2" "$3" "$4"
 elif [ "${1}" == "POST" ]; then
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$arg4"
+        -X$1 -H "${conType}" "${baseUrl}/$2" "$3" "$arg4"
 #elif [ "${1}" == "KIBANA" ]; then
 #    curl -skK \
 #        <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-#        -XPOST -H "${contType}" -H "kbn-xsrf: reporting" "$2"
+#        -XPOST -H "${conType}" -H "kbn-xsrf: reporting" "$2"
 else
     curl -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        -X$1 -H "${contType}" "${esBaseUrl}/$2" "$3" "$4" "$5"
+        -X$1 -H "${conType}" "${baseUrl}/$2" "$3" "$4" "$5"
 fi
 
 ##### TODO #####
