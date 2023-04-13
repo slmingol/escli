@@ -16,4 +16,7 @@ usernameCmd='lpass show --username found.io'
 passwordCmd='lpass show --password found.io'
 
 esBaseUrl="https://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.us-east-1.aws.found.io:9243"
-contType="Content-Type: application/json"
+esContType="Content-Type: application/json"
+
+kbBaseUrl="https://${kbHost}.us-easst-1.aws.found.io"
+kbContType="kbn-xsrf: true"
