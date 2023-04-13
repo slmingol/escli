@@ -43,5 +43,8 @@
 usernameCmd='lpass show --username somedom.com'
 passwordCmd='lpass show --password somedom.com'
 
-esBaseUrl="https://es-data-01a.${env}.somedom.com:9200"
-contType="Content-Type: application/json"
+esBaseUrl="https://es-data-01b.${env}.somedom.com:9200"
+esContType="Content-Type: application/json"
+
+kbBaseUrl="https://${kbHost}.somedom.com"
+kbContType="kbn-xsrf: true"

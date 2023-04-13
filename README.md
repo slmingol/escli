@@ -37,28 +37,32 @@ Finally there's a file `cmds.md` which includes examples with output showcasing 
 ├── es_funcs.bash
 ├── esc -> escli.bash
 ├── escli.bash
+├── escli.conf
 ├── escli.conf.sample
 ├── escli_c.conf.sample
 ├── esl -> escli.bash
 ├── esp -> escli.bash
 ├── gen_EXAMPLES.bash
+├── kbc -> escli.bash
+├── kbl -> escli.bash
+├── kbp -> escli.bash
 ├── zencli.bash
 ├── zencli.conf.sample
 ├── zsl -> zencli.bash
 └── zsp -> zencli.bash
 
-0 directories, 16 files
+1 directory, 20 files
 ```
 
 ### USAGE
 
 #### `escli.bash`
-The `escli.bash` has 2 "personalities" on which it can operate. When you want to use the "lab" persona, you'd invoke it using the `./esl` symbolic link.
+The `escli.bash` has several "personalities" on which it can operate against Elastic Search & Kibana URLs. Additionally it can operate against different instances' environments. For example, when you want to use the "lab" persona, you'd invoke it using the `./esl` symbolic link to target the Elastic lab instance.
 
 ```
  $ ▶ ./esl
 
-    USAGE: ./esl [HEAD|GET|PUT|POST] '...ES REST CALL...'
+    USAGE: ./esl [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
 
     EXAMPLES:
 
@@ -76,7 +80,7 @@ Alternatively, when wanting to use the "production" persona, you'd invoke it usi
 ```
 $ ▶ ./esp
 
-    USAGE: ./esp [HEAD|GET|PUT|POST] '...ES REST CALL...'
+    USAGE: ./esp [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
 
     EXAMPLES:
 
@@ -94,7 +98,7 @@ Additionally if you maintain a cluster that's hosted via Elastic's found.io doma
 ```
 $ ▶ ./esc
 
-    USAGE: ./esc [HEAD|GET|PUT|POST] '...ES REST CALL...'
+    USAGE: ./esc [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
 
     EXAMPLES:
 
@@ -104,6 +108,38 @@ $ ▶ ./esc
         ./esc GET  ''
         ./esc PUT  '_all/_settings'   -d "$DATA"
         ./esc POST '_cluster/reroute' -d "$DATA"
+
+
+```
+
+When targeting the Kibana "lab" or "production" environments you'd use either `./kbl` or `./kbp`.
+```
+ $ ▶ ./kbl
+
+    USAGE: ./kbl [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
+
+    EXAMPLES:
+
+        ./kbl GET  '_cat/shards?pretty'
+        ./kbl GET  '_cat/indices?pretty&v&human'
+        ./kbl GET  '_cat'
+        ./kbl GET  ''
+        ./kbl PUT  '_all/_settings'   -d "$DATA"
+        ./kbl POST '_cluster/reroute' -d "$DATA"
+
+
+ $ ▶ ./kbp
+
+    USAGE: ./kbp [HEAD|GET|PUT|POST] '...ES/KB REST CALL...'
+
+    EXAMPLES:
+
+        ./kbp GET  '_cat/shards?pretty'
+        ./kbp GET  '_cat/indices?pretty&v&human'
+        ./kbp GET  '_cat'
+        ./kbp GET  ''
+        ./kbp PUT  '_all/_settings'   -d "$DATA"
+        ./kbp POST '_cluster/reroute' -d "$DATA"
 
 
 ```
@@ -118,7 +154,7 @@ $ ▶
 
 This is a list of the functions it provides:
 ```
- $ ▶ escli_ls
+$ ▶ escli_ls
 gen_README
 cmp_README
 mk_README
@@ -287,7 +323,7 @@ chk_s3_plugin_nodes
 
 You can also get that list with a short description of each function:
 ```
- $ ▶ escli_lsl
+$ ▶ escli_lsl
 
 #0-----------------------------------------------
 # helper funcs
