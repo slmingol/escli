@@ -57,10 +57,10 @@ uname="$(uname)"
 gen_README () {
     # generate contents of README.md
     cat \
-         <($sedCmd -n '0,/^$ escli_ls$/p' README.md) \
+         <($sedCmd -n '0,/^$ ▶ escli_ls$/p' README.md) \
          <(escli_ls) \
          <($sedCmd -n '/^show_template_ilm_idx_alias_details$/,/^You can also get that list/p' README.md | grep -v '^show_template_ilm_idx_alias_details$') \
-         <(grep -B1 '^$ escli_lsl$' README.md) \
+         <(grep -B1 '^$ ▶ escli_lsl$' README.md) \
          <(escli_lsl) \
          <($sedCmd -n '/^show_template_ilm_idx_alias_details[  ]\+#/,$p' README.md | $sedCmd -n '4,$p')
 }
@@ -478,11 +478,12 @@ usage_chk19 () {
 }
 
 list_node_name_suffixes_usage_helper () {
-  local env="$1"
+    # List node name suffixes (01a, 01b, etc.)
+    local env="$1"
 
-  if [[ ! -z $env ]]; then
-    list_node_name_suffixes $env
-  fi
+    if [[ ! -z $env ]]; then
+        list_node_name_suffixes $env
+    fi
 }
 
 
@@ -2438,7 +2439,6 @@ show_excluded_nodes () {
 }
 
 exclude_node_name () {
-#    set -x
     # exclude a node from cluster (node suffix)
     local env="$1"
     local node="$2"
@@ -2466,7 +2466,6 @@ exclude_node_name () {
 	EOM
     )
     ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
-#    set +x
 }
 
 clear_excluded_nodes () {
