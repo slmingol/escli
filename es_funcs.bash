@@ -4,6 +4,12 @@ escmd[l]="./esl"
 escmd[p]="./esp"
 escmd[c]="./esc"
 
+### kb wrapper cmd inventory
+declare -A kbcmd
+kbcmd[l]="./kbl"
+kbcmd[p]="./kbp"
+kbcmd[c]="./kbc"
+
 ### es data node naming conventions
 nodeBaseName="rdu-es-data-0"
 declare -A esnode
@@ -1878,6 +1884,13 @@ show_es_ecs () {
     open 'https://www.elastic.co/guide/en/ecs/current/ecs-field-reference.html'
 }
 
+show_api_alerts_health () {
+    # shows the API Alerting health
+    # https://www.elastic.co/guide/en/kibana/master/alerting-apis.html
+    local env="$1"
+    usage_chk1 "$env" || return 1
+    ${kbcmd[$env]} GET 'api/alerting/_health' | jq .
+}
 
 #11----------------------------------------------
 # shard funcs
@@ -2425,6 +2438,7 @@ show_excluded_nodes () {
 }
 
 exclude_node_name () {
+#    set -x
     # exclude a node from cluster (node suffix)
     local env="$1"
     local node="$2"
@@ -2440,8 +2454,8 @@ exclude_node_name () {
 
     ip=$(host "$name" | awk '{print $4}')
 
-##    name="es-data-01aa.rdu1.bwnet.us"
-##    ip="192.168.138.71"
+##    name="es-data-01ac.rdu1.bwnet.us"
+##    ip="192.168.138.75"
     EXCLUDENAME=$(cat <<-EOM
         {
          "transient": {
@@ -2452,6 +2466,7 @@ exclude_node_name () {
 	EOM
     )
     ${escmd["$env"]} PUT  '_cluster/settings' -d "$EXCLUDENAME"
+#    set +x
 }
 
 clear_excluded_nodes () {
