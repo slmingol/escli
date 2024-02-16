@@ -39,13 +39,13 @@ filename="es_funcs.bash"
 #################################################
 uname="$(uname)"
 # sed
-[ "$uname" == 'Darwin' ] && sedCmd=gsed     || sedCmd=sed
+[[ "$uname" == 'Darwin' ]] && sedCmd=gsed     || sedCmd=sed
 # gpaste
-[ "$uname" == 'Darwin' ] && pasteCmd=gpaste || pasteCmd=paste
+[[ "$uname" == 'Darwin' ]] && pasteCmd=gpaste || pasteCmd=paste
 # gdate
-[ "$uname" == 'Darwin' ] && dateCmd=gdate   || dateCmd=date
+[[ "$uname" == 'Darwin' ]] && dateCmd=gdate   || dateCmd=date
 # ggrep
-[ "$uname" == 'Darwin' ] && grepCmd=ggrep   || grepCmd=grep
+[[ "$uname" == 'Darwin' ]] && grepCmd=ggrep   || grepCmd=grep
 
 #################################################
 ### Functions 
