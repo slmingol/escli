@@ -82,9 +82,16 @@ elif [ "${1}" == "POST" ]; then
 #        <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
 #        -XPOST -H "${conType}" -H "kbn-xsrf: reporting" "$2"
 else
-    curl -skK \
-        <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
-        -X$1 -H "${conType}" "${baseUrl}/$2" "$3" "$4" "$5"
+    if [[ $3 || $4 || $5 ]]; then
+        argvars="$3 $4 $5"
+        curl -skK \
+            <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
+            -X$1 -H "${conType}" "${baseUrl}/$2" "$argvars"
+    else
+        curl -skK \
+            <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
+            -X$1 -H "${conType}" "${baseUrl}/$2" #"$3" "$4" "$5"
+    fi
 fi
 
 ##### TODO #####
