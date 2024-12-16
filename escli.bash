@@ -65,6 +65,8 @@ arg4=$(echo "$tmpArg4" | sed -e "s|XXXXXXXX|$(${usernameCmd})|" -e "s|YYYYYYYY|$
 #------------------------------------------------
 # ...ways to call curl.....
 #------------------------------------------------
+#D set -x
+
 if [ "${1}" == "HEAD" ]; then
     curl -I -skK \
         <(cat <<<"user = \"$( ${usernameCmd} ):$( ${passwordCmd} )\"") \
@@ -93,6 +95,7 @@ else
             -X$1 -H "${conType}" "${baseUrl}/$2" #"$3" "$4" "$5"
     fi
 fi
+#D set +x
 
 ##### TODO #####
 # the username logic above which uses `sed` to swap out XXXX and YYYY w/ username + password is a tricky bit. We've tested it with passwords like this:
