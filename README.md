@@ -1,3 +1,12 @@
+> [!NOTE]
+> **📦 Project Status: End of Life (EOL)**
+> 
+> This project is no longer actively maintained. While it works fine and contains useful code for those working with Elasticsearch, I am no longer actively using Elasticsearch in my current role and will not be adding new features or providing regular updates.
+> 
+> Feel free to fork, use, or adapt this code for your own needs. Pull requests for critical bug fixes may still be reviewed.
+
+---
+
 ### BACKGROUND
 This repo includes a CLI tool to simplify interacting with the Elasticsearch REST API. It makes a couple of assumptions:
 
